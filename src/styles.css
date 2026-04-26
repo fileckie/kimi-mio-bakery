@@ -1,0 +1,334 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #FAF6F0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #FAF6F0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+p, h1, h2, h3 {
+  overflow-wrap: anywhere;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(30, 23, 18, 0.12);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 23, 18, 0.25);
+}
+
+/* Input base */
+.input-field {
+  width: 100%;
+  border-radius: 8px;
+  border: 1.5px solid #E2D5C5;
+  background: #FFFFFF;
+  padding: 0.875rem 1rem;
+  color: #1E1712;
+  outline: none;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+  font-size: 0.9375rem;
+}
+.input-field:focus {
+  border-color: #1E1712;
+  box-shadow: 0 0 0 3px rgba(30, 23, 18, 0.05);
+}
+.input-field::placeholder {
+  color: #A89E94;
+}
+
+/* Counter button */
+.counter-button {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #F0E9E0;
+  color: #1E1712;
+  transition: all 150ms ease;
+}
+.counter-button:hover {
+  background: #E5DDD3;
+}
+
+/* Admin nav */
+.admin-nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 150ms ease;
+}
+
+.admin-panel {
+  min-width: 0;
+  border-radius: 16px;
+  border: 1px solid #E2D5C5;
+  background: #FFFFFF;
+  padding: 1.5rem;
+}
+
+/* ===== 拙气纹理系统 ===== */
+
+/* 老旧纸张 */
+.paper-texture {
+  position: relative;
+}
+.paper-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* 咖啡渍/墨迹晕染 */
+.ink-bleed {
+  position: relative;
+}
+.ink-bleed::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  opacity: 0.03;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 30% 20%, rgba(30,23,18,0.15) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 80%, rgba(30,23,18,0.1) 0%, transparent 40%);
+}
+
+/* 手绘下划线 */
+.hand-underline {
+  position: relative;
+  display: inline-block;
+}
+.hand-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.6;
+  border-radius: 50% 50% 0 0;
+  transform: rotate(-0.5deg);
+}
+
+/* 不规则圆角卡片 */
+.card-rough {
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+}
+.card-rough-sm {
+  border-radius: 125px 8px 115px 8px / 8px 115px 8px 125px;
+}
+
+/* 手撕边缘效果 */
+.torn-edge {
+  position: relative;
+}
+.torn-edge::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: inherit;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12' preserveAspectRatio='none'%3E%3Cpath d='M0,12 Q5,0 10,12 T20,12 T30,12 T40,12 T50,12 T60,12 T70,12 T80,12 T90,12 T100,12 V0 H0 Z' fill='black'/%3E%3C/svg%3E");
+  mask-size: 100% 100%;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12' preserveAspectRatio='none'%3E%3Cpath d='M0,12 Q5,0 10,12 T20,12 T30,12 T40,12 T50,12 T60,12 T70,12 T80,12 T90,12 T100,12 V0 H0 Z' fill='black'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+}
+
+/* Shimmer loading */
+.shimmer {
+  background: linear-gradient(90deg, #F0E9E0 25%, #FAF6F0 50%, #F0E9E0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* Stagger utilities */
+.stagger-1 { animation-delay: 80ms; }
+.stagger-2 { animation-delay: 160ms; }
+.stagger-3 { animation-delay: 240ms; }
+.stagger-4 { animation-delay: 320ms; }
+.stagger-5 { animation-delay: 400ms; }
+
+/* Image zoom */
+.img-zoom {
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.group:hover .img-zoom {
+  transform: scale(1.04);
+}
+
+/* Elegant link underline */
+.elegant-link {
+  position: relative;
+}
+.elegant-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: currentColor;
+  transition: width 300ms ease;
+}
+.elegant-link:hover::after {
+  width: 100%;
+}
+
+/* Countdown ring */
+.countdown-ring {
+  position: relative;
+}
+.countdown-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #E84A2E;
+  animation: spin 2.5s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Urgency pulse */
+.urgency-pulse {
+  animation: urgencyPulse 2.5s ease-in-out infinite;
+}
+@keyframes urgencyPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Steam effect */
+.steam-particle {
+  animation: steam 3s ease-out infinite;
+}
+
+/* ===== Print Styles ===== */
+@media print {
+  @page { margin: 10mm; size: A4; }
+  body {
+    background: #FAF6F0 !important;
+    color: #1E1712 !important;
+    font-family: Inter, sans-serif !important;
+  }
+
+  /* Hide screen chrome */
+  .print\:hidden,
+  header, nav, .admin-nav-button,
+  button:not(.print\:show) {
+    display: none !important;
+  }
+  .print\:show { display: block !important; }
+  .print\:flex { display: flex !important; }
+  .print\:shadow-none { box-shadow: none !important; }
+  .print\:border-2 { border-width: 2px !important; }
+  .print\:border-kiln { border-color: #1E1712 !important; }
+  .print\:bg-white { background: #FFFFFF !important; }
+
+  /* Print-specific typography */
+  .print-title {
+    font-family: 'Zhi Mang Xing', cursive !important;
+    font-size: 32px !important;
+    color: #1E1712 !important;
+  }
+  .print-subtitle {
+    font-family: 'Long Cang', cursive !important;
+    font-size: 16px !important;
+    color: #7A6E62 !important;
+  }
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .print-table th {
+    text-align: left;
+    border-bottom: 2px solid #1E1712;
+    padding: 8px 4px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .print-table td {
+    padding: 8px 4px;
+    border-bottom: 1px solid #E2D5C5;
+    font-size: 14px;
+  }
+  .print-check {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #1E1712;
+    display: inline-block;
+    border-radius: 3px;
+  }
+  .print-seal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border: 2.5px solid #E84A2E;
+    border-radius: 8px;
+    color: #E84A2E;
+    font-family: 'Zhi Mang Xing', cursive;
+    font-size: 26px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

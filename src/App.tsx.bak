@@ -1,0 +1,3286 @@
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
+import {
+  BadgeCheck,
+  Bike,
+  Camera,
+  ChevronRight,
+  ClipboardList,
+  CreditCard,
+  Edit3,
+  Flame,
+  Home,
+  MapPin,
+  Menu,
+  Minus,
+  PackageCheck,
+  PackageOpen,
+  Plus,
+  QrCode,
+  ReceiptText,
+  Search,
+  Send,
+  Settings2,
+  ShieldCheck,
+  ShoppingBag,
+  Smartphone,
+  Store,
+  Truck,
+  Upload,
+  UserPlus,
+  Users,
+  Wallet,
+  X,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import heroImage from "./assets/hero-bakery.svg";
+
+type Category = "欧包/坚果" | "吐司" | "恰巴塔" | "贝果/海盐卷" | "软欧包";
+type DeliveryMethod = "门店自提" | "本地配送" | "顺丰快递";
+type PaymentMethod = "微信转账" | "微信支付" | "支付宝" | "到店付" | "现金";
+type OrderType = "online" | "pos";
+type OrderStatus = "待确认" | "待生产" | "待自提" | "待发货" | "已发货" | "已完成";
+type Route = "/" | "/admin" | "/admin/pos";
+type RoleId = "hq" | "store-a" | "store-b" | "store-c" | "store-d";
+type StoreId = "store-a" | "store-b" | "store-c" | "store-d";
+
+type Product = {
+  id: string;
+  name: string;
+  category: Category;
+  weight: string;
+  price: number;
+  description: string;
+  ingredients: string[];
+  imageTone: string;
+  imageUrl?: string;
+  isPublished: boolean;
+  featured: boolean;
+};
+
+type StoreLocation = {
+  id: StoreId;
+  name: string;
+  role: "central" | "pickup";
+  address: string;
+  pickupOpen: boolean;
+  sourceCode: string;
+};
+
+type BatchSale = {
+  isOpen: boolean;
+  deadline: string;
+  ovenBatch: string;
+  ovenBatches: OvenBatch[];
+  featuredProductIds: string[];
+  pickupStoreIds: StoreId[];
+  freeShippingThreshold: number;
+  baseShippingFee: number;
+  note: string;
+  paymentWechatId: string;
+  paymentQrUrl: string;
+  paymentInstruction: string;
+};
+
+type OvenBatch = {
+  id: string;
+  label: string;
+  time: string;
+  productIds: string[];
+};
+
+type Customer = {
+  id: string;
+  name: string;
+  phone: string;
+  createdAt?: string;
+};
+
+type InventoryAllocation = Record<
+  string,
+  {
+    centralStock: number;
+    stores: Record<StoreId, number>;
+    sold: Record<StoreId, number>;
+  }
+>;
+
+type Order = {
+  id: string;
+  type: OrderType;
+  items: { productId: string; name: string; qty: number; price: number }[];
+  subtotal: number;
+  shippingFee: number;
+  total: number;
+  deliveryMethod: DeliveryMethod;
+  paymentMethod: PaymentMethod;
+  status: OrderStatus;
+  customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  paymentStatus?: string;
+  sourceStoreId: StoreId;
+  pickupStoreId: StoreId;
+  receiver?: string;
+  phone?: string;
+  address?: string;
+  shippingCompany?: string;
+  trackingNumber?: string;
+  logisticsStatus?: string;
+  deliveryNote?: string;
+  pickupCode?: string;
+  createdAt: string;
+};
+
+type BootstrapPayload = {
+  products: Product[];
+  stores: StoreLocation[];
+  batchSale: BatchSale;
+  inventory: InventoryAllocation;
+  orders: Order[];
+};
+
+const categories: Category[] = ["欧包/坚果", "吐司", "恰巴塔", "贝果/海盐卷", "软欧包"];
+
+const initialProducts: Product[] = [
+  {
+    id: "lychee-rose",
+    name: "荔枝玫瑰",
+    category: "欧包/坚果",
+    weight: "280克",
+    price: 35,
+    description: "红酒浸润荔枝果香，玫瑰尾调清晰，适合切片分享。",
+    ingredients: ["红酒荔枝", "玫瑰", "天然酵母"],
+    imageTone: "from-rose-200 via-pink-100 to-amber-50",
+    isPublished: true,
+    featured: true,
+  },
+  {
+    id: "country-fruit",
+    name: "乡村果实",
+    category: "欧包/坚果",
+    weight: "280克",
+    price: 32,
+    description: "加州蔓越莓和热带亚麻籽，酸甜耐嚼，适合早餐。",
+    ingredients: ["蔓越莓", "亚麻籽", "乡村面团"],
+    imageTone: "from-red-100 via-orange-100 to-stone-100",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "chia-nut",
+    name: "奇亚籽坚果多",
+    category: "欧包/坚果",
+    weight: "280克",
+    price: 35,
+    description: "坚果香和谷物感更重，口感扎实，适合健身早餐。",
+    ingredients: ["奇亚籽", "综合坚果", "全麦粉"],
+    imageTone: "from-lime-100 via-stone-100 to-yellow-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "fig-goji",
+    name: "无花果&枸杞子",
+    category: "欧包/坚果",
+    weight: "280克",
+    price: 35,
+    description: "无花果颗粒和枸杞甜香，回烤后果香更明显。",
+    ingredients: ["无花果", "枸杞", "天然酵母"],
+    imageTone: "from-purple-100 via-orange-100 to-yellow-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "salt-roll",
+    name: "海盐卷",
+    category: "贝果/海盐卷",
+    weight: "70克",
+    price: 11,
+    description: "外壳微脆，内部柔软，黄油和海盐是主角。",
+    ingredients: ["海盐", "黄油", "高筋粉"],
+    imageTone: "from-yellow-100 via-amber-100 to-stone-50",
+    isPublished: true,
+    featured: true,
+  },
+  {
+    id: "cranberry-cheese-bagel",
+    name: "蔓越莓乳酪贝果",
+    category: "贝果/海盐卷",
+    weight: "85克",
+    price: 15,
+    description: "乳酪微咸，蔓越莓带酸甜，适合冷藏后食用。",
+    ingredients: ["乳酪", "蔓越莓", "贝果面团"],
+    imageTone: "from-rose-100 via-stone-50 to-red-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "orange-flower-bagel",
+    name: "橙皮鲜花贝果",
+    category: "贝果/海盐卷",
+    weight: "95克",
+    price: 12,
+    description: "橙皮清香和花香轻盈，适合办公室拼单。",
+    ingredients: ["糖渍橙皮", "花香酱", "贝果面团"],
+    imageTone: "from-orange-100 via-pink-50 to-yellow-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "pistachio-toast",
+    name: "开心果吐司",
+    category: "吐司",
+    weight: "280克",
+    price: 39,
+    description: "坚果脂香浓郁，整条预订更适合家庭早餐。",
+    ingredients: ["开心果", "牛奶", "吐司面团"],
+    imageTone: "from-lime-100 via-green-50 to-stone-50",
+    isPublished: true,
+    featured: true,
+  },
+  {
+    id: "pumpkin-toast",
+    name: "贝贝南瓜吐司",
+    category: "吐司",
+    weight: "280克",
+    price: 36,
+    description: "贝贝南瓜带自然甜香，口感柔软细腻。",
+    ingredients: ["贝贝南瓜", "牛奶", "吐司面团"],
+    imageTone: "from-orange-200 via-yellow-100 to-stone-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "coconut-toast",
+    name: "奶油生椰吐司",
+    category: "吐司",
+    weight: "280克",
+    price: 36,
+    description: "椰香和奶油感明显，适合作为门店主推款。",
+    ingredients: ["生椰乳", "奶油", "吐司面团"],
+    imageTone: "from-sky-50 via-stone-100 to-white",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "mushroom-cheese-ciabatta",
+    name: "菌菇奶酪恰巴塔",
+    category: "恰巴塔",
+    weight: "190克",
+    price: 22,
+    description: "菌菇香气和奶酪咸香，适合作为午餐轻食。",
+    ingredients: ["菌菇", "奶酪", "恰巴塔面团"],
+    imageTone: "from-stone-200 via-yellow-50 to-neutral-100",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "rose-cranberry-ciabatta",
+    name: "玫瑰蔓越莓恰巴塔",
+    category: "恰巴塔",
+    weight: "190克",
+    price: 22,
+    description: "玫瑰香和蔓越莓果酸平衡，适合开团试吃。",
+    ingredients: ["玫瑰", "蔓越莓", "恰巴塔面团"],
+    imageTone: "from-pink-100 via-red-50 to-stone-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "basil-bacon-ciabatta",
+    name: "罗勒培根恰巴塔",
+    category: "恰巴塔",
+    weight: "190克",
+    price: 22,
+    description: "罗勒和培根咸香明显，适合同城午间配送。",
+    ingredients: ["罗勒", "培根", "恰巴塔面团"],
+    imageTone: "from-green-100 via-amber-50 to-stone-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "sausage-cheese-ciabatta",
+    name: "德肠芝士恰巴塔",
+    category: "恰巴塔",
+    weight: "190克",
+    price: 22,
+    description: "德肠和芝士带来更强饱腹感，适合办公室拼单。",
+    ingredients: ["德肠", "芝士", "恰巴塔面团"],
+    imageTone: "from-yellow-100 via-orange-100 to-red-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "banana-choco-ciabatta",
+    name: "香蕉巧克力恰巴塔",
+    category: "恰巴塔",
+    weight: "190克",
+    price: 22,
+    description: "香蕉甜香和巧克力微苦，下午茶友好。",
+    ingredients: ["香蕉", "巧克力", "恰巴塔面团"],
+    imageTone: "from-yellow-100 via-neutral-100 to-amber-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "ham-mushroom-soft",
+    name: "火腿菌菇软欧包",
+    category: "软欧包",
+    weight: "120克",
+    price: 20,
+    description: "火腿和菌菇咸香，单人早餐或午餐都合适。",
+    ingredients: ["火腿", "菌菇", "软欧面团"],
+    imageTone: "from-amber-100 via-stone-100 to-yellow-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "beef-pepper-soft",
+    name: "黑胡椒牛肉软欧包",
+    category: "软欧包",
+    weight: "140克",
+    price: 26,
+    description: "黑胡椒香气和牛肉颗粒，适合工作日午餐。",
+    ingredients: ["牛肉", "黑胡椒", "软欧面团"],
+    imageTone: "from-stone-300 via-red-100 to-amber-50",
+    isPublished: true,
+    featured: false,
+  },
+  {
+    id: "brownie-soft",
+    name: "布朗尼软欧包",
+    category: "软欧包",
+    weight: "180克",
+    price: 26,
+    description: "巧克力甜点型软欧，适合加购和分享。",
+    ingredients: ["布朗尼", "巧克力", "软欧面团"],
+    imageTone: "from-neutral-300 via-amber-100 to-stone-100",
+    isPublished: true,
+    featured: false,
+  },
+];
+
+const initialStores: StoreLocation[] = [
+  {
+    id: "store-a",
+    name: "A 店 · 中央厨房",
+    role: "central",
+    address: "中央厨房与主门店",
+    pickupOpen: true,
+    sourceCode: "MIO-A",
+  },
+  {
+    id: "store-b",
+    name: "B 店 · 社区自提点",
+    role: "pickup",
+    address: "社区北门自提点",
+    pickupOpen: true,
+    sourceCode: "MIO-B",
+  },
+  {
+    id: "store-c",
+    name: "C 店 · 商圈自提点",
+    role: "pickup",
+    address: "商圈咖啡店联名点",
+    pickupOpen: true,
+    sourceCode: "MIO-C",
+  },
+  {
+    id: "store-d",
+    name: "D 店 · 写字楼自提点",
+    role: "pickup",
+    address: "写字楼前台自提",
+    pickupOpen: true,
+    sourceCode: "MIO-D",
+  },
+];
+
+const defaultStoreStock: Record<StoreId, number> = {
+  "store-a": 12,
+  "store-b": 8,
+  "store-c": 8,
+  "store-d": 6,
+};
+
+const initialInventory: InventoryAllocation = Object.fromEntries(
+  initialProducts.map((product, index) => {
+    const total = 32 + (index % 5) * 6;
+    return [
+      product.id,
+      {
+        centralStock: total,
+        stores: {
+          "store-a": Math.min(total, defaultStoreStock["store-a"] + (index % 3)),
+          "store-b": Math.min(total, defaultStoreStock["store-b"] + (index % 2)),
+          "store-c": Math.min(total, defaultStoreStock["store-c"]),
+          "store-d": Math.min(total, defaultStoreStock["store-d"] + (index % 2)),
+        },
+        sold: {
+          "store-a": index % 4,
+          "store-b": index % 3,
+          "store-c": index % 2,
+          "store-d": index % 3 === 0 ? 1 : 0,
+        },
+      },
+    ];
+  }),
+) as InventoryAllocation;
+
+const initialBatchSale: BatchSale = {
+  isOpen: true,
+  deadline: "今晚 21:30",
+  ovenBatch: "明日 10:30 / 16:30 出炉",
+  ovenBatches: [
+    { id: "batch-am", label: "第一炉", time: "11:30", productIds: ["lychee-rose", "salt-roll", "pistachio-toast"] },
+    { id: "batch-pm", label: "第二炉", time: "17:30", productIds: ["country-fruit", "pumpkin-toast", "brownie-soft"] },
+  ],
+  featuredProductIds: ["lychee-rose", "salt-roll", "pistachio-toast"],
+  pickupStoreIds: ["store-a", "store-b", "store-c", "store-d"],
+  freeShippingThreshold: 150,
+  baseShippingFee: 10,
+  note: "集中预订，按门店分配库存，次日到店自提或本地配送。",
+  paymentWechatId: "mio220827",
+  paymentQrUrl: "",
+  paymentInstruction: "下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。",
+};
+
+const emptyBatchSale: BatchSale = {
+  isOpen: false,
+  deadline: "",
+  ovenBatch: "",
+  ovenBatches: [],
+  featuredProductIds: [],
+  pickupStoreIds: [],
+  freeShippingThreshold: 150,
+  baseShippingFee: 10,
+  note: "",
+  paymentWechatId: "mio220827",
+  paymentQrUrl: "",
+  paymentInstruction: "下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。",
+};
+
+const initialOrders: Order[] = [
+  {
+    id: "MIO2601",
+    type: "online",
+    items: [
+      { productId: "lychee-rose", name: "荔枝玫瑰", qty: 2, price: 35 },
+      { productId: "salt-roll", name: "海盐卷", qty: 5, price: 11 },
+    ],
+    subtotal: 125,
+    shippingFee: 0,
+    total: 125,
+    deliveryMethod: "门店自提",
+    paymentMethod: "微信支付",
+    status: "待生产",
+    sourceStoreId: "store-b",
+    pickupStoreId: "store-b",
+    createdAt: "09:42",
+  },
+  {
+    id: "MIO2602",
+    type: "online",
+    items: [{ productId: "pistachio-toast", name: "开心果吐司", qty: 4, price: 39 }],
+    subtotal: 156,
+    shippingFee: 0,
+    total: 156,
+    deliveryMethod: "顺丰快递",
+    paymentMethod: "支付宝",
+    status: "待发货",
+    sourceStoreId: "store-c",
+    pickupStoreId: "store-c",
+    receiver: "王女士",
+    phone: "138****2031",
+    address: "上海市徐汇区某小区",
+    createdAt: "10:16",
+  },
+  {
+    id: "POS0816",
+    type: "pos",
+    items: [
+      { productId: "salt-roll", name: "海盐卷", qty: 2, price: 11 },
+      { productId: "brownie-soft", name: "布朗尼软欧包", qty: 1, price: 26 },
+    ],
+    subtotal: 48,
+    shippingFee: 0,
+    total: 48,
+    deliveryMethod: "门店自提",
+    paymentMethod: "现金",
+    status: "已完成",
+    sourceStoreId: "store-a",
+    pickupStoreId: "store-a",
+    createdAt: "11:05",
+  },
+];
+
+const paymentMethods: { method: PaymentMethod; icon: LucideIcon }[] = [
+  { method: "微信转账", icon: QrCode },
+  { method: "微信支付", icon: Smartphone },
+  { method: "支付宝", icon: CreditCard },
+  { method: "到店付", icon: Store },
+  { method: "现金", icon: Wallet },
+];
+
+const statusStyles: Record<OrderStatus, string> = {
+  待确认: "bg-amber-50 text-amber-800",
+  待生产: "bg-orange-50 text-orange-800",
+  待自提: "bg-blue-50 text-blue-800",
+  待发货: "bg-purple-50 text-purple-800",
+  已发货: "bg-sky-50 text-sky-800",
+  已完成: "bg-green-50 text-green-800",
+};
+
+const orderStatusOptions: OrderStatus[] = ["待确认", "待生产", "待自提", "待发货", "已发货", "已完成"];
+
+async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "content-type": "application/json",
+      ...(options?.headers ?? {}),
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "请求失败");
+  }
+  return data as T;
+}
+
+function readImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("图片读取失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function App() {
+  const [route, setRoute] = useState<Route>(normalizeRoute(window.location.pathname));
+  const [products, setProducts] = useState<Product[]>([]);
+  const [stores, setStores] = useState<StoreLocation[]>([]);
+  const [batchSale, setBatchSale] = useState<BatchSale>(emptyBatchSale);
+  const [inventory, setInventory] = useState<InventoryAllocation>({});
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [activeRole, setActiveRole] = useState<RoleId>("hq");
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onPop = () => setRoute(normalizeRoute(window.location.pathname));
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
+    void refreshData();
+  }, []);
+
+  const refreshData = async () => {
+    try {
+      const data = await apiRequest<BootstrapPayload>("/api/bootstrap");
+      setProducts(data.products);
+      setStores(data.stores);
+      setBatchSale(data.batchSale);
+      setInventory(data.inventory);
+      setOrders(data.orders);
+      setApiError(null);
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : "后端暂不可用，暂时无法读取门店数据");
+    }
+  };
+
+  const navigate = (nextRoute: Route) => {
+    window.history.pushState({}, "", nextRoute);
+    setRoute(nextRoute);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const createOrder = async (order: Order) => {
+    try {
+      const endpoint = order.type === "pos" ? "/api/admin/pos-orders" : "/api/orders";
+      const data = await apiRequest<{ order: Order; inventory: InventoryAllocation }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(order),
+      });
+      setOrders((current) => [data.order, ...current.filter((item) => item.id !== data.order.id)]);
+      setInventory(data.inventory);
+      setApiError(null);
+      return data.order;
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : "订单保存失败");
+      return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-flour text-cocoa">
+      {route === "/" ? (
+        <CustomerHeader navigate={navigate} />
+      ) : (
+        <AdminHeader
+          route={route}
+          navigate={navigate}
+          activeRole={activeRole}
+          setActiveRole={setActiveRole}
+          stores={stores}
+        />
+      )}
+      {products.length === 0 || stores.length === 0 ? (
+        <LoadingShell />
+      ) : route === "/" ? (
+        <CustomerPage
+          products={products}
+          stores={stores}
+          batchSale={batchSale}
+          inventory={inventory}
+          createOrder={createOrder}
+        />
+      ) : null}
+      {apiError && (
+        <div className="fixed bottom-4 left-1/2 z-[80] max-w-[92vw] -translate-x-1/2 rounded-full bg-cocoa px-5 py-3 text-sm text-flour shadow-soft">
+          {apiError}
+        </div>
+      )}
+      {route === "/admin" && products.length > 0 && stores.length > 0 && (
+        <AdminPage
+          products={products}
+          setProducts={setProducts}
+          stores={stores}
+          setStores={setStores}
+          batchSale={batchSale}
+          setBatchSale={setBatchSale}
+          inventory={inventory}
+          setInventory={setInventory}
+          orders={orders}
+          setOrders={setOrders}
+          activeRole={activeRole}
+          navigate={navigate}
+          setApiError={setApiError}
+        />
+      )}
+      {route === "/admin/pos" && products.length > 0 && stores.length > 0 && (
+        <PosPage
+          products={products}
+          stores={stores}
+          inventory={inventory}
+          activeRole={activeRole}
+          createOrder={createOrder}
+          navigate={navigate}
+        />
+      )}
+    </div>
+  );
+}
+
+function normalizeRoute(pathname: string): Route {
+  if (pathname === "/admin" || pathname === "/admin/pos") return pathname;
+  return "/";
+}
+
+function LoadingShell() {
+  return (
+    <main className="flex min-h-[70svh] items-center justify-center px-4 py-24">
+      <div className="rounded-lg border border-cocoa/10 bg-white p-6 text-center shadow-soft">
+        <Flame className="mx-auto h-8 w-8 text-crust" />
+        <p className="mt-4 font-semibold">正在读取 Mio Bakery 数据</p>
+        <p className="mt-2 text-sm text-cocoa/52">商品、门店、库存和订单会从本地 SQLite 加载。</p>
+      </div>
+    </main>
+  );
+}
+
+function CustomerHeader({ navigate }: { navigate: (route: Route) => void }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navItems = [
+    { label: "今日出炉", href: "#today" },
+    { label: "面包单", href: "#menu" },
+    { label: "查订单", href: "#order-lookup" },
+    { label: "社区团购", href: "#pickup" },
+    { label: "门店信息", href: "#stores" },
+  ];
+
+  return (
+    <header className="absolute inset-x-0 top-0 z-40 border-b border-white/8 bg-flour/95 text-cocoa backdrop-blur-xl">
+      <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <a href="/" className="flex items-center gap-3" aria-label="Mio Bakery 首页">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-cocoa text-flour shadow-sm">
+            <Flame className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block text-lg font-semibold leading-tight">Mio Bakery</span>
+            <span className="block text-xs text-cocoa/58">手作窑烤面包 加微信mio220827</span>
+          </span>
+        </a>
+        <nav className="hidden items-center gap-10 text-sm font-semibold lg:flex">
+          {navItems.map((item, index) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`pb-2 transition hover:text-crust ${index === 0 ? "border-b border-cocoa" : ""}`}
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div className="hidden items-center gap-3 lg:flex">
+          <button
+            type="button"
+            onClick={() => navigate("/admin")}
+            className="inline-flex items-center gap-2 rounded-full border border-cocoa/14 px-5 py-3 text-sm font-semibold transition hover:bg-white"
+          >
+            <Settings2 className="h-4 w-4" />
+            商家登录
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-cocoa shadow-sm lg:hidden"
+          aria-label="打开菜单"
+        >
+          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </div>
+      {menuOpen && (
+        <div className="border-t border-cocoa/8 bg-flour px-4 pb-4 lg:hidden">
+          <div className="grid gap-2 pt-3">
+            {navItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg bg-white px-4 py-3 text-sm font-semibold"
+              >
+                {item.label}
+              </a>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/admin");
+              }}
+              className="rounded-lg border border-cocoa/10 px-4 py-3 text-left text-sm font-semibold"
+            >
+              商家登录
+            </button>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
+
+function AdminHeader({
+  route,
+  navigate,
+  activeRole,
+  setActiveRole,
+  stores,
+}: {
+  route: Route;
+  navigate: (route: Route) => void;
+  activeRole: RoleId;
+  setActiveRole: (role: RoleId) => void;
+  stores: StoreLocation[];
+}) {
+  const roleOptions = [
+    { id: "hq" as RoleId, name: "总部账号" },
+    ...stores.map((store) => ({ id: store.id as RoleId, name: store.name })),
+  ];
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-cocoa/10 bg-flour/92 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cocoa text-flour">
+            <Settings2 className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold">Mio Bakery 运营后台</p>
+            <p className="text-xs text-cocoa/58">总部与门店共用的管理入口</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="input-field h-10 min-w-44 rounded-full py-0 text-sm"
+            value={activeRole}
+            onChange={(event) => setActiveRole(event.target.value as RoleId)}
+            aria-label="选择后台角色"
+          >
+            {roleOptions.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => navigate("/admin")}
+            className={`admin-nav-button ${route === "/admin" ? "bg-cocoa text-flour" : "bg-white text-cocoa"}`}
+          >
+            <ClipboardList className="h-4 w-4" />
+            后台
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/admin/pos")}
+            className={`admin-nav-button ${route === "/admin/pos" ? "bg-cocoa text-flour" : "bg-white text-cocoa"}`}
+          >
+            <ReceiptText className="h-4 w-4" />
+            收银
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function CustomerPage({
+  products,
+  stores,
+  batchSale,
+  inventory,
+  createOrder,
+}: {
+  products: Product[];
+  stores: StoreLocation[];
+  batchSale: BatchSale;
+  inventory: InventoryAllocation;
+  createOrder: (order: Order) => Promise<Order | null>;
+}) {
+  const [activeCategory, setActiveCategory] = useState<Category | "全部">("全部");
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const [pickupStoreId, setPickupStoreId] = useState<StoreId>("store-a");
+  const [sourceStoreId, setSourceStoreId] = useState<StoreId>("store-a");
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("门店自提");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("微信转账");
+  const [receiver, setReceiver] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [customer, setCustomer] = useState<Customer | null>(() => {
+    try {
+      const saved = window.localStorage.getItem("mio-customer");
+      return saved ? (JSON.parse(saved) as Customer) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [memberMode, setMemberMode] = useState<"login" | "register">("register");
+  const [memberName, setMemberName] = useState("");
+  const [memberPhone, setMemberPhone] = useState("");
+  const [memberPassword, setMemberPassword] = useState("");
+  const [memberMessage, setMemberMessage] = useState("");
+  const [successOrder, setSuccessOrder] = useState<Order | null>(null);
+  const [lookupCode, setLookupCode] = useState("");
+  const [lookupOrder, setLookupOrder] = useState<Order | null>(null);
+  const [lookupMessage, setLookupMessage] = useState("");
+  const [mobileCheckoutOpen, setMobileCheckoutOpen] = useState(false);
+
+  const publishedProducts = products.filter((product) => product.isPublished);
+  const featuredProducts = batchSale.featuredProductIds
+    .map((productId) => products.find((product) => product.id === productId))
+    .filter(Boolean) as Product[];
+  const filteredProducts =
+    activeCategory === "全部"
+      ? publishedProducts
+      : publishedProducts.filter((product) => product.category === activeCategory);
+  const pickupStores = stores.filter(
+    (store) => store.pickupOpen && batchSale.pickupStoreIds.includes(store.id),
+  );
+  const selectedPickupStore = stores.find((store) => store.id === pickupStoreId) ?? stores[0];
+  const cartItems = useMemo(
+    () =>
+      Object.entries(cart)
+        .map(([productId, qty]) => {
+          const product = products.find((item) => item.id === productId);
+          return product && qty > 0
+            ? { productId, name: product.name, qty, price: product.price }
+            : null;
+        })
+        .filter(Boolean) as Order["items"],
+    [cart, products],
+  );
+  const subtotal = cartItems.reduce((sum, item) => sum + item.qty * item.price, 0);
+  const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
+  const shippingFee =
+    deliveryMethod === "门店自提" || subtotal >= batchSale.freeShippingThreshold
+      ? 0
+      : batchSale.baseShippingFee;
+  const total = subtotal + shippingFee;
+
+  const getAvailable = (productId: string, storeId = pickupStoreId) => {
+    const allocation = inventory[productId];
+    if (!allocation) return 0;
+    return Math.max(0, allocation.stores[storeId] - allocation.sold[storeId]);
+  };
+
+  const updateCart = (productId: string, delta: number) => {
+    if (!batchSale.isOpen) return;
+    const available = getAvailable(productId);
+    setCart((current) => {
+      const nextQty = Math.max(0, Math.min(available, (current[productId] ?? 0) + delta));
+      const next = { ...current, [productId]: nextQty };
+      if (nextQty === 0) delete next[productId];
+      return next;
+    });
+  };
+
+  const submitOrder = async () => {
+    if (!batchSale.isOpen || cartItems.length === 0) return;
+    if (!customer) {
+      setMemberMessage("请先用姓名和手机号注册或登录，再提交订购单。");
+      setMobileCheckoutOpen(true);
+      return;
+    }
+    const order: Order = {
+      id: "",
+      type: "online",
+      items: cartItems,
+      subtotal,
+      shippingFee,
+      total,
+      deliveryMethod,
+      paymentMethod,
+      status: deliveryMethod === "门店自提" ? "待生产" : "待发货",
+      customerId: customer.id,
+      customerName: customer.name,
+      customerPhone: customer.phone,
+      paymentStatus: "待付款确认",
+      sourceStoreId,
+      pickupStoreId,
+      receiver: deliveryMethod === "门店自提" ? customer.name : receiver || customer.name,
+      phone: deliveryMethod === "门店自提" ? customer.phone : phone || customer.phone,
+      address: deliveryMethod === "门店自提" ? undefined : address,
+      createdAt: "刚刚",
+    };
+    const savedOrder = await createOrder(order);
+    if (savedOrder) {
+      setSuccessOrder(savedOrder);
+      setMobileCheckoutOpen(false);
+      setCart({});
+    }
+  };
+
+  const submitMember = async () => {
+    try {
+      const nextCustomer = await apiRequest<Customer>(
+        memberMode === "register" ? "/api/customers/register" : "/api/customers/login",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: memberName,
+            phone: memberPhone,
+            password: memberPassword,
+          }),
+        },
+      );
+      setCustomer(nextCustomer);
+      window.localStorage.setItem("mio-customer", JSON.stringify(nextCustomer));
+      setReceiver((current) => current || nextCustomer.name);
+      setPhone((current) => current || nextCustomer.phone);
+      setMemberMessage("");
+    } catch (error) {
+      setMemberMessage(error instanceof Error ? error.message : "会员信息保存失败");
+    }
+  };
+
+  const logoutMember = () => {
+    setCustomer(null);
+    window.localStorage.removeItem("mio-customer");
+  };
+
+  const lookupCustomerOrder = async () => {
+    if (!lookupCode.trim()) return;
+    try {
+      const order = await apiRequest<Order>(`/api/orders/lookup?code=${encodeURIComponent(lookupCode.trim())}`);
+      setLookupOrder(order);
+      setLookupMessage("");
+    } catch (error) {
+      setLookupOrder(null);
+      setLookupMessage(error instanceof Error ? error.message : "没有找到订单");
+    }
+  };
+
+  return (
+    <main className="pb-24 lg:pb-0">
+      <section id="today" className="relative min-h-[100svh] overflow-hidden bg-cocoa pt-[76px] text-flour">
+        <img
+          src={heroImage}
+          alt="Mio Bakery 窑烤面包出炉场景"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-95"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(31,24,20,.94)_0%,rgba(31,24,20,.82)_34%,rgba(31,24,20,.30)_70%,rgba(31,24,20,.08)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-cocoa/70 to-transparent" />
+        <div className="relative mx-auto grid min-h-[calc(100svh-76px)] max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_430px] lg:px-8">
+          <div className="max-w-2xl animate-rise pt-6 lg:pt-0">
+            <p className="mb-5 inline-flex items-center gap-2 rounded-full bg-flour/12 px-4 py-2 text-sm text-flour/86 backdrop-blur">
+              <Flame className="h-4 w-4 text-orange-200" />
+              {batchSale.isOpen ? `今日两炉 · ${batchSale.deadline} 截止` : "下一炉准备中"}
+            </p>
+            <h1 className="font-display text-5xl font-semibold leading-[0.92] sm:text-7xl lg:text-8xl xl:text-9xl">
+              Mio Bakery
+            </h1>
+            <p className="mt-6 max-w-xl text-xl font-semibold leading-9 text-flour/90 sm:text-2xl">
+              把刚出炉的面包，留给愿意等它的人。
+            </p>
+            <p className="mt-3 max-w-xl text-lg leading-8 text-flour/72">
+              手作窑烤面包，支持预订、自提与社区拼单。
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a
+                href="#menu"
+                className="inline-flex items-center gap-2 rounded-full bg-[#efc79c] px-6 py-4 text-sm font-semibold text-cocoa transition hover:bg-[#f7d7b3]"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                预订今日出炉
+              </a>
+              <a
+                href="#pickup"
+                className="inline-flex items-center gap-2 rounded-full border border-flour/35 px-6 py-4 text-sm font-semibold text-flour transition hover:bg-flour/10"
+              >
+                <Users className="h-4 w-4" />
+                查看团购
+              </a>
+            </div>
+            <div className="mt-10 hidden max-w-xl grid-cols-3 gap-4 border-t border-flour/18 pt-7 sm:grid">
+              <HeroProof icon={Flame} label="天然酵母" desc="长时间低温发酵" />
+              <HeroProof icon={Home} label="窑炉现烤" desc="高温石板烘烤" />
+              <HeroProof icon={PackageCheck} label="当日限量" desc="售完即止" />
+            </div>
+          </div>
+
+          <div className="animate-rise lg:justify-self-end">
+            <TodayBakeCard
+              batchSale={batchSale}
+              products={featuredProducts.length > 0 ? featuredProducts : publishedProducts.slice(0, 4)}
+              allProducts={publishedProducts}
+              getAvailable={getAvailable}
+            />
+          </div>
+        </div>
+      </section>
+
+      <FeatureEntrances />
+
+      <section id="order-lookup" className="border-b border-cocoa/8 bg-white py-12">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
+          <div>
+            <p className="text-sm font-semibold text-ember">订单查询</p>
+            <h2 className="mt-2 text-3xl font-semibold">顾客可用订单号或取货码查询。</h2>
+            <p className="mt-3 text-cocoa/58">下单成功后会生成订单号和 6 位取货码，自提和配送都可以查状态。</p>
+          </div>
+          <div className="rounded-lg border border-cocoa/10 bg-flour p-4 sm:p-5">
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <input
+                className="input-field bg-white"
+                value={lookupCode}
+                onChange={(event) => setLookupCode(event.target.value)}
+                placeholder="输入订单号或 6 位取货码"
+              />
+              <button
+                type="button"
+                onClick={lookupCustomerOrder}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-cocoa px-5 py-3 text-sm font-semibold text-flour"
+              >
+                <Search className="h-4 w-4" />
+                查询
+              </button>
+            </div>
+            {lookupMessage && <p className="mt-3 text-sm text-ember">{lookupMessage}</p>}
+            {lookupOrder && (
+              <OrderSummaryCard order={lookupOrder} stores={stores} />
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section id="about" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-[.9fr_1.1fr] lg:items-end">
+          <div>
+            <p className="text-sm font-semibold text-ember">手作窑烤</p>
+            <h2 className="mt-3 text-4xl font-semibold leading-tight sm:text-5xl">
+              不是每天零碎接单，而是每一轮认真开炉。
+            </h2>
+          </div>
+          <p className="text-lg leading-8 text-cocoa/62">
+            顾客平时可以看完整产品目录。到了本轮预订开放日，门店会把链接发到各自社群，顾客选择自提门店或配送方式后下单，后台再按门店库存安排生产。
+          </p>
+        </div>
+      </section>
+
+      <section id="pickup" className="bg-oat/70 py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-ember">本轮状态</p>
+              <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">
+                {batchSale.isOpen ? "今天开放预订" : "本轮预订未开放"}
+              </h2>
+              <p className="mt-3 max-w-2xl text-cocoa/62">{batchSale.note}</p>
+            </div>
+            <div className={`rounded-full px-5 py-3 text-sm font-semibold ${batchSale.isOpen ? "bg-green-50 text-green-800" : "bg-stone-200 text-stone-700"}`}>
+              {batchSale.isOpen ? `${batchSale.deadline} 截止` : "请等待门店群通知"}
+            </div>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {pickupStores.map((store) => (
+              <button
+                key={store.id}
+                type="button"
+                onClick={() => {
+                  setPickupStoreId(store.id);
+                  setSourceStoreId(store.id);
+                }}
+                className={`rounded-lg border p-5 text-left transition ${
+                  pickupStoreId === store.id
+                    ? "border-cocoa bg-cocoa text-flour shadow-soft"
+                    : "border-cocoa/10 bg-white text-cocoa hover:-translate-y-1 hover:shadow-soft"
+                }`}
+              >
+                <p className="text-lg font-semibold">{store.name}</p>
+                <p className={`mt-2 text-sm ${pickupStoreId === store.id ? "text-flour/70" : "text-cocoa/56"}`}>
+                  {store.address}
+                </p>
+                <p className={`mt-4 text-xs ${pickupStoreId === store.id ? "text-flour/58" : "text-cocoa/42"}`}>
+                  来源码 {store.sourceCode}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="menu" className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1fr_390px] lg:px-8">
+        <div>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-ember">全部面包</p>
+              <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">本轮可查看的产品目录</h2>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {["全部", ...categories].map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setActiveCategory(category as Category | "全部")}
+                  className={`min-w-fit rounded-full px-4 py-2 text-sm font-medium transition ${
+                    activeCategory === category
+                      ? "bg-cocoa text-flour"
+                      : "bg-white text-cocoa/70 hover:bg-oat"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredProducts.map((product) => (
+              <ProductTile
+                key={product.id}
+                product={product}
+                available={getAvailable(product.id)}
+                qty={cart[product.id] ?? 0}
+                canOrder={batchSale.isOpen}
+                onAdd={() => updateCart(product.id, 1)}
+                onRemove={() => updateCart(product.id, -1)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <aside className="hidden lg:sticky lg:top-6 lg:block lg:self-start">
+          <CheckoutPanel
+            batchSale={batchSale}
+            cartItems={cartItems}
+            subtotal={subtotal}
+            shippingFee={shippingFee}
+            total={total}
+            stores={stores}
+            pickupStore={selectedPickupStore}
+            pickupStoreId={pickupStoreId}
+            setPickupStoreId={setPickupStoreId}
+            sourceStoreId={sourceStoreId}
+            setSourceStoreId={setSourceStoreId}
+            deliveryMethod={deliveryMethod}
+            setDeliveryMethod={setDeliveryMethod}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            receiver={receiver}
+            setReceiver={setReceiver}
+            phone={phone}
+            setPhone={setPhone}
+            address={address}
+            setAddress={setAddress}
+            submitOrder={submitOrder}
+            successOrder={successOrder}
+            customer={customer}
+            memberMode={memberMode}
+            setMemberMode={setMemberMode}
+            memberName={memberName}
+            setMemberName={setMemberName}
+            memberPhone={memberPhone}
+            setMemberPhone={setMemberPhone}
+            memberPassword={memberPassword}
+            setMemberPassword={setMemberPassword}
+            memberMessage={memberMessage}
+            submitMember={submitMember}
+            logoutMember={logoutMember}
+          />
+        </aside>
+      </section>
+
+      <section id="stores" className="border-t border-cocoa/10 bg-white py-14">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
+          <div>
+            <p className="text-sm font-semibold text-ember">门店信息</p>
+            <h2 className="mt-2 text-3xl font-semibold">中央厨房出炉，多门店自提。</h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {stores.map((store) => (
+              <div key={store.id} className="rounded-lg border border-cocoa/10 bg-flour p-4">
+                <p className="font-semibold">{store.name}</p>
+                <p className="mt-1 text-sm text-cocoa/58">{store.address}</p>
+                <p className="mt-3 text-xs text-cocoa/40">自提码 {store.sourceCode}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <MobileCheckoutBar
+        cartCount={cartCount}
+        total={total}
+        isOpen={mobileCheckoutOpen}
+        setOpen={setMobileCheckoutOpen}
+        checkout={
+          <CheckoutPanel
+            batchSale={batchSale}
+            cartItems={cartItems}
+            subtotal={subtotal}
+            shippingFee={shippingFee}
+            total={total}
+            stores={stores}
+            pickupStore={selectedPickupStore}
+            pickupStoreId={pickupStoreId}
+            setPickupStoreId={setPickupStoreId}
+            sourceStoreId={sourceStoreId}
+            setSourceStoreId={setSourceStoreId}
+            deliveryMethod={deliveryMethod}
+            setDeliveryMethod={setDeliveryMethod}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            receiver={receiver}
+            setReceiver={setReceiver}
+            phone={phone}
+            setPhone={setPhone}
+            address={address}
+            setAddress={setAddress}
+            submitOrder={submitOrder}
+            successOrder={successOrder}
+            customer={customer}
+            memberMode={memberMode}
+            setMemberMode={setMemberMode}
+            memberName={memberName}
+            setMemberName={setMemberName}
+            memberPhone={memberPhone}
+            setMemberPhone={setMemberPhone}
+            memberPassword={memberPassword}
+            setMemberPassword={setMemberPassword}
+            memberMessage={memberMessage}
+            submitMember={submitMember}
+            logoutMember={logoutMember}
+          />
+        }
+      />
+    </main>
+  );
+}
+
+function TrustItem({ icon: Icon, label, desc }: { icon: LucideIcon; label: string; desc: string }) {
+  return (
+    <div className="flex items-center gap-4 border-cocoa/10 py-5 lg:border-r lg:last:border-r-0">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-oat text-crust">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span>
+        <span className="block font-semibold">{label}</span>
+        <span className="text-sm text-cocoa/58">{desc}</span>
+      </span>
+    </div>
+  );
+}
+
+function ProductTile({
+  product,
+  available,
+  qty,
+  canOrder,
+  onAdd,
+  onRemove,
+}: {
+  product: Product;
+  available: number;
+  qty: number;
+  canOrder: boolean;
+  onAdd: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <article className="group overflow-hidden rounded-lg border border-cocoa/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-soft">
+      <ProductVisual product={product} />
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">{product.name}</h3>
+            <p className="mt-1 text-sm text-cocoa/58">
+              {product.weight} · {product.description}
+            </p>
+          </div>
+          <span className="shrink-0 text-lg font-semibold text-crust">¥{product.price}</span>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {product.ingredients.map((item) => (
+            <span key={item} className="rounded-full bg-oat px-2.5 py-1 text-xs text-cocoa/66">
+              {item}
+            </span>
+          ))}
+        </div>
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <span className="text-sm text-cocoa/50">
+            {canOrder ? `当前自提点剩余 ${available}` : "可浏览，待开放预订"}
+          </span>
+          {qty > 0 ? (
+            <div className="flex items-center gap-2 rounded-full bg-oat p-1">
+              <button type="button" onClick={onRemove} className="counter-button" aria-label="减少">
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="w-7 text-center text-sm font-semibold">{qty}</span>
+              <button type="button" onClick={onAdd} className="counter-button bg-cocoa text-flour" aria-label="增加">
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onAdd}
+              disabled={!canOrder || available === 0}
+              className="rounded-full bg-cocoa px-4 py-2 text-sm font-semibold text-flour transition hover:bg-crust disabled:cursor-not-allowed disabled:bg-cocoa/25"
+            >
+              {canOrder ? "加入" : "未开放"}
+            </button>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ProductVisual({ product }: { product: Product }) {
+  if (product.imageUrl) {
+    return (
+      <div className="relative h-36 overflow-hidden bg-oat">
+        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+        {product.featured && (
+          <span className="absolute left-4 top-4 rounded-full bg-white/88 px-3 py-1 text-xs font-semibold text-cocoa">
+            本轮主推
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative h-36 overflow-hidden bg-gradient-to-br ${product.imageTone}`}>
+      <div className="absolute left-1/2 top-1/2 h-20 w-40 -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-amber-700/70 shadow-[inset_0_10px_0_rgba(255,255,255,.22)]" />
+      <div className="absolute left-[35%] top-[42%] h-16 w-2 rotate-[-12deg] rounded-full bg-cocoa/22" />
+      <div className="absolute left-[50%] top-[38%] h-20 w-2 rotate-[-8deg] rounded-full bg-cocoa/18" />
+      <div className="absolute left-[64%] top-[43%] h-16 w-2 rotate-[10deg] rounded-full bg-cocoa/18" />
+      {product.featured && (
+        <span className="absolute left-4 top-4 rounded-full bg-white/82 px-3 py-1 text-xs font-semibold text-cocoa">
+          本轮主推
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ProductAdminPreview({ product }: { product: Product }) {
+  if (product.imageUrl) {
+    return (
+      <div className="h-20 overflow-hidden rounded-lg bg-oat">
+        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative h-20 overflow-hidden rounded-lg bg-gradient-to-br ${product.imageTone}`}>
+      <div className="absolute left-1/2 top-1/2 h-9 w-16 -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-amber-700/75 shadow-[inset_0_5px_0_rgba(255,255,255,.2)]" />
+    </div>
+  );
+}
+
+function CheckoutPanel({
+  batchSale,
+  cartItems,
+  subtotal,
+  shippingFee,
+  total,
+  stores,
+  pickupStore,
+  pickupStoreId,
+  setPickupStoreId,
+  sourceStoreId,
+  setSourceStoreId,
+  deliveryMethod,
+  setDeliveryMethod,
+  paymentMethod,
+  setPaymentMethod,
+  receiver,
+  setReceiver,
+  phone,
+  setPhone,
+  address,
+  setAddress,
+  submitOrder,
+  successOrder,
+  customer,
+  memberMode,
+  setMemberMode,
+  memberName,
+  setMemberName,
+  memberPhone,
+  setMemberPhone,
+  memberPassword,
+  setMemberPassword,
+  memberMessage,
+  submitMember,
+  logoutMember,
+}: {
+  batchSale: BatchSale;
+  cartItems: Order["items"];
+  subtotal: number;
+  shippingFee: number;
+  total: number;
+  stores: StoreLocation[];
+  pickupStore: StoreLocation;
+  pickupStoreId: StoreId;
+  setPickupStoreId: (storeId: StoreId) => void;
+  sourceStoreId: StoreId;
+  setSourceStoreId: (storeId: StoreId) => void;
+  deliveryMethod: DeliveryMethod;
+  setDeliveryMethod: (method: DeliveryMethod) => void;
+  paymentMethod: PaymentMethod;
+  setPaymentMethod: (method: PaymentMethod) => void;
+  receiver: string;
+  setReceiver: (value: string) => void;
+  phone: string;
+  setPhone: (value: string) => void;
+  address: string;
+  setAddress: (value: string) => void;
+  submitOrder: () => void | Promise<void>;
+  successOrder: Order | null;
+  customer: Customer | null;
+  memberMode: "login" | "register";
+  setMemberMode: (mode: "login" | "register") => void;
+  memberName: string;
+  setMemberName: (value: string) => void;
+  memberPhone: string;
+  setMemberPhone: (value: string) => void;
+  memberPassword: string;
+  setMemberPassword: (value: string) => void;
+  memberMessage: string;
+  submitMember: () => void | Promise<void>;
+  logoutMember: () => void;
+}) {
+  const deliveryOptions: { method: DeliveryMethod; icon: LucideIcon; desc: string }[] = [
+    { method: "门店自提", icon: Store, desc: pickupStore.address },
+    { method: "本地配送", icon: Bike, desc: `满${batchSale.freeShippingThreshold}免运，未满${batchSale.baseShippingFee}元` },
+    { method: "顺丰快递", icon: Truck, desc: `满${batchSale.freeShippingThreshold}免运，未满${batchSale.baseShippingFee}元` },
+  ];
+
+  return (
+    <div className="rounded-lg border border-cocoa/10 bg-white p-5 shadow-soft">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-ember">预订窗口</p>
+          <h2 className="mt-1 text-2xl font-semibold">{batchSale.isOpen ? "本轮可下单" : "本轮未开放"}</h2>
+        </div>
+        <ShoppingBag className="h-6 w-6 text-crust" />
+      </div>
+      {!batchSale.isOpen && (
+        <div className="mt-5 rounded-lg bg-oat p-4 text-sm text-cocoa/62">
+          当前只开放产品浏览。下一轮开炉时，门店会在社群里发送链接。
+        </div>
+      )}
+
+      <MemberPanel
+        customer={customer}
+        memberMode={memberMode}
+        setMemberMode={setMemberMode}
+        memberName={memberName}
+        setMemberName={setMemberName}
+        memberPhone={memberPhone}
+        setMemberPhone={setMemberPhone}
+        memberPassword={memberPassword}
+        setMemberPassword={setMemberPassword}
+        memberMessage={memberMessage}
+        submitMember={submitMember}
+        logoutMember={logoutMember}
+      />
+
+      <div className="mt-5 space-y-3">
+        {cartItems.length === 0 ? (
+          <p className="rounded-lg bg-flour p-4 text-sm text-cocoa/58">选择面包后，这里会生成预订清单。</p>
+        ) : (
+          cartItems.map((item) => (
+            <div key={item.productId} className="flex items-center justify-between border-b border-cocoa/8 pb-3 text-sm">
+              <span>
+                {item.name} <span className="text-cocoa/48">x {item.qty}</span>
+              </span>
+              <span className="font-semibold">¥{item.qty * item.price}</span>
+            </div>
+          ))
+        )}
+      </div>
+
+      <FormLabel label="自提门店" />
+      <select
+        value={pickupStoreId}
+        onChange={(event) => setPickupStoreId(event.target.value as StoreId)}
+        className="input-field"
+      >
+        {stores
+          .filter((store) => store.pickupOpen && batchSale.pickupStoreIds.includes(store.id))
+          .map((store) => (
+            <option key={store.id} value={store.id}>
+              {store.name}
+            </option>
+          ))}
+      </select>
+
+      <FormLabel label="来源门店" />
+      <select
+        value={sourceStoreId}
+        onChange={(event) => setSourceStoreId(event.target.value as StoreId)}
+        className="input-field"
+      >
+        {stores.map((store) => (
+          <option key={store.id} value={store.id}>
+            {store.name} · {store.sourceCode}
+          </option>
+        ))}
+      </select>
+
+      <FormLabel label="取货/配送" />
+      <div className="grid gap-2">
+        {deliveryOptions.map((option) => {
+          const Icon = option.icon;
+          const active = deliveryMethod === option.method;
+          return (
+            <button
+              key={option.method}
+              type="button"
+              onClick={() => setDeliveryMethod(option.method)}
+              className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${
+                active ? "border-cocoa bg-cocoa text-flour" : "border-cocoa/10 bg-flour hover:bg-oat"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              <span>
+                <span className="block text-sm font-semibold">{option.method}</span>
+                <span className={`text-xs ${active ? "text-flour/70" : "text-cocoa/50"}`}>{option.desc}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {deliveryMethod !== "门店自提" && (
+        <>
+          <FormLabel label="配送信息" />
+          <div className="grid gap-3">
+            <input className="input-field" value={receiver} onChange={(event) => setReceiver(event.target.value)} placeholder="收件人" />
+            <input className="input-field" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="手机号" />
+            <textarea className="input-field min-h-20 resize-none" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="详细地址" />
+          </div>
+        </>
+      )}
+
+      <FormLabel label="付款确认" />
+      <div className="grid grid-cols-2 gap-2">
+        {paymentMethods.map((option) => {
+          const Icon = option.icon;
+          const active = paymentMethod === option.method;
+          return (
+            <button
+              key={option.method}
+              type="button"
+              onClick={() => setPaymentMethod(option.method)}
+              className={`flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold transition ${
+                active ? "bg-ember text-white" : "bg-oat text-cocoa/72 hover:bg-stone-200"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {option.method}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 space-y-2 border-t border-cocoa/10 pt-5 text-sm">
+        <div className="flex justify-between text-cocoa/58">
+          <span>商品小计</span>
+          <span>¥{subtotal}</span>
+        </div>
+        <div className="flex justify-between text-cocoa/58">
+          <span>运费</span>
+          <span>{shippingFee === 0 ? "免运费" : `¥${shippingFee}`}</span>
+        </div>
+        <div className="flex items-center justify-between pt-2">
+          <span className="text-cocoa/58">合计</span>
+          <span className="text-3xl font-semibold">¥{total}</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={submitOrder}
+        disabled={!batchSale.isOpen || cartItems.length === 0 || !customer}
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-cocoa px-5 py-3 font-semibold text-flour transition hover:bg-crust disabled:cursor-not-allowed disabled:bg-cocoa/30"
+      >
+        <BadgeCheck className="h-5 w-5" />
+        {batchSale.isOpen ? "生成订购单" : "等待开放"}
+      </button>
+      {successOrder && (
+        <div className="mt-4 rounded-lg bg-green-50 p-4 text-sm text-green-900">
+          <p className="font-semibold">订单 {successOrder.id} 已提交</p>
+          <p className="mt-1">
+            {successOrder.deliveryMethod} · 合计 ¥{successOrder.total}
+            {successOrder.pickupCode ? ` · 取货码 ${successOrder.pickupCode}` : ""}
+          </p>
+          <PaymentWechatCard batchSale={batchSale} order={successOrder} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FormLabel({ label }: { label: string }) {
+  return <p className="mb-2 mt-5 text-xs font-semibold uppercase text-cocoa/48">{label}</p>;
+}
+
+function MemberPanel({
+  customer,
+  memberMode,
+  setMemberMode,
+  memberName,
+  setMemberName,
+  memberPhone,
+  setMemberPhone,
+  memberPassword,
+  setMemberPassword,
+  memberMessage,
+  submitMember,
+  logoutMember,
+}: {
+  customer: Customer | null;
+  memberMode: "login" | "register";
+  setMemberMode: (mode: "login" | "register") => void;
+  memberName: string;
+  setMemberName: (value: string) => void;
+  memberPhone: string;
+  setMemberPhone: (value: string) => void;
+  memberPassword: string;
+  setMemberPassword: (value: string) => void;
+  memberMessage: string;
+  submitMember: () => void | Promise<void>;
+  logoutMember: () => void;
+}) {
+  if (customer) {
+    return (
+      <div className="mt-5 rounded-lg bg-green-50 p-4 text-sm text-green-900">
+        <div className="flex items-center justify-between gap-3">
+          <span>
+            <span className="block font-semibold">{customer.name}</span>
+            <span className="text-green-900/68">{customer.phone}</span>
+          </span>
+          <button type="button" onClick={logoutMember} className="text-xs font-semibold text-green-900/60">
+            切换
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 rounded-lg border border-cocoa/10 bg-flour p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-semibold">会员信息</p>
+        <div className="rounded-full bg-white p-1 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setMemberMode("register")}
+            className={`rounded-full px-3 py-1 ${memberMode === "register" ? "bg-cocoa text-flour" : "text-cocoa/58"}`}
+          >
+            注册
+          </button>
+          <button
+            type="button"
+            onClick={() => setMemberMode("login")}
+            className={`rounded-full px-3 py-1 ${memberMode === "login" ? "bg-cocoa text-flour" : "text-cocoa/58"}`}
+          >
+            登录
+          </button>
+        </div>
+      </div>
+      <div className="mt-3 grid gap-3">
+        {memberMode === "register" && (
+          <input
+            className="input-field bg-white"
+            value={memberName}
+            onChange={(event) => setMemberName(event.target.value)}
+            placeholder="姓名"
+          />
+        )}
+        <input
+          className="input-field bg-white"
+          value={memberPhone}
+          onChange={(event) => setMemberPhone(event.target.value)}
+          placeholder="手机号"
+        />
+        <input
+          className="input-field bg-white"
+          type="password"
+          value={memberPassword}
+          onChange={(event) => setMemberPassword(event.target.value)}
+          placeholder="设置或输入密码"
+        />
+      </div>
+      {memberMessage && <p className="mt-2 text-sm text-ember">{memberMessage}</p>}
+      <button
+        type="button"
+        onClick={submitMember}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full bg-cocoa px-4 py-3 text-sm font-semibold text-flour"
+      >
+        <UserPlus className="h-4 w-4" />
+        {memberMode === "register" ? "注册并继续下单" : "登录并继续下单"}
+      </button>
+    </div>
+  );
+}
+
+function PaymentWechatCard({ batchSale, order }: { batchSale: BatchSale; order: Order }) {
+  const orderText = `订购单 ${order.id}，${order.items
+    .map((item) => `${item.name}x${item.qty}`)
+    .join("，")}，合计¥${order.total}`;
+
+  return (
+    <div className="mt-4 rounded-lg bg-white p-4 text-cocoa">
+      <div className="flex items-start gap-3">
+        {batchSale.paymentQrUrl ? (
+          <img src={batchSale.paymentQrUrl} alt="Mio Bakery 微信二维码" className="h-24 w-24 rounded-lg object-cover" />
+        ) : (
+          <div className="qr-box h-24 w-24 shrink-0">
+            <QrCode className="h-9 w-9" />
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="font-semibold">添加主理人微信付款确认</p>
+          <p className="mt-1 text-sm text-cocoa/58">微信号 {batchSale.paymentWechatId}</p>
+          <p className="mt-2 text-sm leading-6 text-cocoa/66">{batchSale.paymentInstruction}</p>
+        </div>
+      </div>
+      <div className="mt-3 rounded-lg bg-flour p-3 text-xs leading-5 text-cocoa/58">
+        {orderText}
+      </div>
+    </div>
+  );
+}
+
+function OrderSummaryCard({ order, stores }: { order: Order; stores: StoreLocation[] }) {
+  return (
+    <div className="mt-4 rounded-lg bg-white p-4 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-semibold">订单 {order.id}</p>
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[order.status]}`}>
+          {order.status}
+        </span>
+      </div>
+      <p className="mt-2 text-cocoa/58">
+        取货码 {order.pickupCode} · {getStoreName(stores, order.pickupStoreId)} · ¥{order.total}
+      </p>
+      <p className="mt-1 text-cocoa/48">
+        {order.customerName || "顾客"} {order.customerPhone || ""} · {order.paymentStatus || "待付款确认"}
+      </p>
+      <p className="mt-2 leading-6 text-cocoa/66">
+        {order.items.map((item) => `${item.name} x${item.qty}`).join(" / ")}
+      </p>
+      {order.deliveryMethod !== "门店自提" && (
+        <div className="mt-3 rounded-lg bg-flour p-3 text-cocoa/60">
+          <p>{order.deliveryMethod} · {order.receiver || "未填收件人"}</p>
+          <p className="mt-1">{order.shippingCompany || "待安排配送"} {order.trackingNumber || ""}</p>
+          {order.logisticsStatus && <p className="mt-1">{order.logisticsStatus}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HeroProof({
+  icon: Icon,
+  label,
+  desc,
+}: {
+  icon: LucideIcon;
+  label: string;
+  desc: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-flour/30 bg-flour/6">
+        <Icon className="h-5 w-5" />
+      </span>
+      <p className="text-sm font-semibold">{label}</p>
+      <p className="mt-1 text-xs leading-5 text-flour/60">{desc}</p>
+    </div>
+  );
+}
+
+function TodayBakeCard({
+  batchSale,
+  products,
+  allProducts,
+  getAvailable,
+}: {
+  batchSale: BatchSale;
+  products: Product[];
+  allProducts: Product[];
+  getAvailable: (productId: string) => number;
+}) {
+  const batches =
+    batchSale.ovenBatches.length > 0
+      ? batchSale.ovenBatches.map((batch) => ({
+          ...batch,
+          products: batch.productIds
+            .map((productId) => allProducts.find((product) => product.id === productId))
+            .filter(Boolean) as Product[],
+        }))
+      : [
+          { id: "batch-am", label: "第一炉", time: "11:30", products: products.slice(0, 3), productIds: [] },
+          { id: "batch-pm", label: "第二炉", time: "17:30", products: products.slice(3, 4), productIds: [] },
+        ];
+
+  return (
+    <div className="w-full rounded-2xl border border-cocoa/10 bg-[#fffaf2] p-5 text-cocoa shadow-soft sm:p-6 lg:w-[410px]">
+      <div className="flex items-center justify-between border-b border-cocoa/10 pb-4">
+        <div>
+          <p className="text-sm text-cocoa/52">今日出炉</p>
+          <h2 className="mt-1 text-xl font-semibold">开放预订面包单</h2>
+        </div>
+        <ShoppingBag className="h-5 w-5 text-crust" />
+      </div>
+
+      {batches.map((batch, index) => (
+        <div key={batch.id} className={`${index === 0 ? "pt-4" : "mt-5 border-t border-cocoa/10 pt-4"}`}>
+          <BakeBatchHeader
+            time={`${batch.label} ${batch.time}`}
+            status={batchSale.isOpen ? (index === 0 ? "已开放" : "即将开始") : "待开放"}
+          />
+          <div className="mt-3 space-y-3">
+            {(batch.products.length > 0 ? batch.products : products.slice(0, 1)).map((product) => (
+              <BakeRow key={`${batch.id}-${product.id}`} product={product} available={getAvailable(product.id)} />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <a
+        href="#menu"
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 border-t border-cocoa/10 pt-5 text-sm font-semibold"
+      >
+        查看完整面包单
+        <ChevronRight className="h-4 w-4" />
+      </a>
+    </div>
+  );
+}
+
+function BakeBatchHeader({ time, status }: { time: string; status: string }) {
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      <span className="text-cocoa/58">{time}</span>
+      <span className="rounded-full bg-oat px-3 py-1 text-xs text-cocoa/62">{status}</span>
+    </div>
+  );
+}
+
+function BakeRow({ product, available }: { product: Product; available: number }) {
+  return (
+    <div className="grid grid-cols-[48px_minmax(0,1fr)_64px] items-center gap-3 sm:grid-cols-[56px_minmax(0,1fr)_72px]">
+      <ProductThumb product={product} />
+      <div className="min-w-0">
+        <p className="truncate font-semibold">{product.name}</p>
+        <p className="mt-1 text-xs text-cocoa/46">{product.weight}</p>
+      </div>
+      <div className="text-right">
+        <p className="font-semibold">¥{product.price}</p>
+        <p className="mt-1 text-xs text-cocoa/46">剩余 {available}</p>
+      </div>
+    </div>
+  );
+}
+
+function ProductThumb({ product }: { product: Product }) {
+  if (product.imageUrl) {
+    return (
+      <div className="h-12 w-14 overflow-hidden rounded-md bg-oat">
+        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative h-12 w-14 overflow-hidden rounded-md bg-gradient-to-br ${product.imageTone}`}>
+      <div className="absolute left-1/2 top-1/2 h-7 w-11 -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-amber-700/75 shadow-[inset_0_5px_0_rgba(255,255,255,.2)]" />
+    </div>
+  );
+}
+
+function FeatureEntrances() {
+  const items = [
+    { icon: ShoppingBag, label: "预订自提", desc: "提前预订，到店自提，省去排队时间。", href: "#menu" },
+    { icon: Users, label: "社区团购", desc: "邻里一起拼单，满足享受配送。", href: "#pickup" },
+    { icon: Store, label: "门店信息", desc: "地址、营业时间、交通路线。", href: "#stores" },
+    { icon: Edit3, label: "关于我们", desc: "了解我们的食材与手作故事。", href: "#about" },
+  ];
+
+  return (
+    <section className="bg-flour py-10">
+      <div className="mx-auto grid max-w-7xl gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <a
+              key={item.label}
+              href={item.href}
+              className="group rounded-lg border border-cocoa/10 bg-white p-6 transition hover:-translate-y-1 hover:shadow-soft"
+            >
+              <Icon className="h-9 w-9 text-cocoa/70" />
+              <p className="mt-5 text-lg font-semibold">{item.label}</p>
+              <p className="mt-2 text-sm leading-6 text-cocoa/52">{item.desc}</p>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function MobileCheckoutBar({
+  cartCount,
+  total,
+  isOpen,
+  setOpen,
+  checkout,
+}: {
+  cartCount: number;
+  total: number;
+  isOpen: boolean;
+  setOpen: (open: boolean) => void;
+  checkout: ReactNode;
+}) {
+  return (
+    <>
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-cocoa/10 bg-flour/96 p-3 shadow-[0_-10px_30px_rgba(43,33,28,.12)] backdrop-blur lg:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center justify-between rounded-full bg-cocoa px-5 py-4 text-flour"
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <ShoppingBag className="h-5 w-5" />
+            {cartCount > 0 ? `${cartCount} 件面包` : "选择今日面包"}
+          </span>
+          <span className="text-lg font-semibold">¥{total}</span>
+        </button>
+      </div>
+      {isOpen && (
+        <div className="fixed inset-0 z-[60] bg-cocoa/40 p-3 backdrop-blur-sm lg:hidden">
+          <div className="absolute inset-x-0 bottom-0 max-h-[88svh] overflow-y-auto rounded-t-2xl bg-flour p-3">
+            <div className="mb-3 flex items-center justify-between px-2">
+              <p className="font-semibold">确认预订</p>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white"
+                aria-label="关闭结算"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {checkout}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function AdminPage({
+  products,
+  setProducts,
+  stores,
+  setStores,
+  batchSale,
+  setBatchSale,
+  inventory,
+  setInventory,
+  orders,
+  setOrders,
+  activeRole,
+  navigate,
+  setApiError,
+}: {
+  products: Product[];
+  setProducts: Dispatch<SetStateAction<Product[]>>;
+  stores: StoreLocation[];
+  setStores: Dispatch<SetStateAction<StoreLocation[]>>;
+  batchSale: BatchSale;
+  setBatchSale: Dispatch<SetStateAction<BatchSale>>;
+  inventory: InventoryAllocation;
+  setInventory: Dispatch<SetStateAction<InventoryAllocation>>;
+  orders: Order[];
+  setOrders: Dispatch<SetStateAction<Order[]>>;
+  activeRole: RoleId;
+  navigate: (route: Route) => void;
+  setApiError: (message: string | null) => void;
+}) {
+  const isHq = activeRole === "hq";
+  const activeStoreId = activeRole === "hq" ? "store-a" : (activeRole as StoreId);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category: "欧包/坚果" as Category,
+    weight: "280克",
+    price: 28,
+    description: "",
+    ingredients: "",
+    imageUrl: "",
+    isPublished: true,
+    featured: false,
+  });
+  const [fulfillmentDrafts, setFulfillmentDrafts] = useState<
+    Record<string, Pick<Order, "shippingCompany" | "trackingNumber" | "logisticsStatus" | "deliveryNote" | "status">>
+  >({});
+  const scopedOrders = isHq
+    ? orders
+    : orders.filter((order) => order.pickupStoreId === activeStoreId || order.sourceStoreId === activeStoreId);
+  const todayTotal = scopedOrders.reduce((sum, order) => sum + order.total, 0);
+  const pickupCount = scopedOrders.filter((order) => order.deliveryMethod === "门店自提").length;
+  const shippingCount = scopedOrders.filter((order) => order.deliveryMethod !== "门店自提").length;
+  const productionOrders = scopedOrders.filter(
+    (order) => order.status === "待确认" || order.status === "待生产",
+  );
+  const pickupOrders = scopedOrders.filter(
+    (order) => order.deliveryMethod === "门店自提" && order.status !== "已完成",
+  );
+  const shippingOrders = scopedOrders.filter(
+    (order) => order.deliveryMethod !== "门店自提" && order.status !== "已完成",
+  );
+
+  const reportError = (error: unknown, fallback: string) => {
+    setApiError(error instanceof Error ? error.message : fallback);
+  };
+
+  const updateStore = async (storeId: StoreId, field: keyof StoreLocation, value: string | boolean) => {
+    if (!isHq) return;
+    setStores((current) => current.map((store) => (store.id === storeId ? { ...store, [field]: value } : store)));
+    try {
+      const updated = await apiRequest<StoreLocation>(`/api/admin/stores/${storeId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ [field]: value }),
+      });
+      setStores((current) => current.map((store) => (store.id === storeId ? updated : store)));
+      setApiError(null);
+    } catch (error) {
+      reportError(error, "门店保存失败");
+    }
+  };
+
+  const updateProduct = async (productId: string, patch: Partial<Product>) => {
+    if (!isHq) return;
+    setProducts((current) =>
+      current.map((product) => (product.id === productId ? { ...product, ...patch } : product)),
+    );
+    try {
+      const updated = await apiRequest<Product>(`/api/admin/products/${productId}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      });
+      setProducts((current) => current.map((product) => (product.id === productId ? updated : product)));
+      setApiError(null);
+    } catch (error) {
+      reportError(error, "商品保存失败");
+    }
+  };
+
+  const createProduct = async () => {
+    if (!isHq || !newProduct.name.trim()) return;
+    try {
+      const data = await apiRequest<{ product: Product; inventory: InventoryAllocation }>("/api/admin/products", {
+        method: "POST",
+        body: JSON.stringify({
+          ...newProduct,
+          name: newProduct.name.trim(),
+          price: Number(newProduct.price),
+          ingredients: newProduct.ingredients
+            .split(/[，,]/)
+            .map((item) => item.trim())
+            .filter(Boolean),
+        }),
+      });
+      setProducts((current) => [data.product, ...current]);
+      setInventory(data.inventory);
+      setNewProduct({
+        name: "",
+        category: "欧包/坚果",
+        weight: "280克",
+        price: 28,
+        description: "",
+        ingredients: "",
+        imageUrl: "",
+        isPublished: true,
+        featured: false,
+      });
+      setApiError(null);
+    } catch (error) {
+      reportError(error, "新增商品失败");
+    }
+  };
+
+  const uploadProductImage = async (productId: string, file?: File) => {
+    if (!file) return;
+    try {
+      const imageUrl = await readImageFile(file);
+      await updateProduct(productId, { imageUrl });
+    } catch (error) {
+      reportError(error, "图片上传失败");
+    }
+  };
+
+  const uploadNewProductImage = async (file?: File) => {
+    if (!file) return;
+    try {
+      const imageUrl = await readImageFile(file);
+      setNewProduct((current) => ({ ...current, imageUrl }));
+    } catch (error) {
+      reportError(error, "图片读取失败");
+    }
+  };
+
+  const updateBatchSale = async (patch: Partial<BatchSale>) => {
+    if (!isHq) return;
+    setBatchSale((current) => ({ ...current, ...patch }));
+    try {
+      const updated = await apiRequest<BatchSale>("/api/admin/batch-sale", {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      });
+      setBatchSale(updated);
+      setApiError(null);
+    } catch (error) {
+      reportError(error, "本轮预订设置保存失败");
+    }
+  };
+
+  const updateOvenBatch = (batchId: string, patch: Partial<OvenBatch>) => {
+    const nextBatches = batchSale.ovenBatches.map((batch) =>
+      batch.id === batchId ? { ...batch, ...patch } : batch,
+    );
+    void updateBatchSale({ ovenBatches: nextBatches });
+  };
+
+  const toggleBatchProduct = (batch: OvenBatch, productId: string) => {
+    const hasProduct = batch.productIds.includes(productId);
+    updateOvenBatch(batch.id, {
+      productIds: hasProduct
+        ? batch.productIds.filter((id) => id !== productId)
+        : [...batch.productIds, productId],
+    });
+  };
+
+  const addOvenBatch = () => {
+    void updateBatchSale({
+      ovenBatches: [
+        ...batchSale.ovenBatches,
+        {
+          id: `batch-${Date.now()}`,
+          label: `第${batchSale.ovenBatches.length + 1}炉`,
+          time: "18:30",
+          productIds: [],
+        },
+      ],
+    });
+  };
+
+  const removeOvenBatch = (batchId: string) => {
+    void updateBatchSale({ ovenBatches: batchSale.ovenBatches.filter((batch) => batch.id !== batchId) });
+  };
+
+  const uploadPaymentQr = async (file?: File) => {
+    if (!file) return;
+    try {
+      const paymentQrUrl = await readImageFile(file);
+      await updateBatchSale({ paymentQrUrl });
+    } catch (error) {
+      reportError(error, "微信二维码读取失败");
+    }
+  };
+
+  const updateStoreStock = async (productId: string, storeId: StoreId, value: number) => {
+    if (!isHq) return;
+    const allocated = Math.max(0, value);
+    setInventory((current) => ({
+      ...current,
+      [productId]: {
+        ...current[productId],
+        stores: {
+          ...current[productId].stores,
+          [storeId]: allocated,
+        },
+      },
+    }));
+    try {
+      const updated = await apiRequest<InventoryAllocation>("/api/admin/inventory", {
+        method: "PATCH",
+        body: JSON.stringify({ productId, storeId, allocated }),
+      });
+      setInventory(updated);
+      setApiError(null);
+    } catch (error) {
+      reportError(error, "库存保存失败");
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, status } : order)));
+    try {
+      const updated = await apiRequest<Order>(`/api/admin/orders/${orderId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      setOrders((current) => current.map((order) => (order.id === orderId ? updated : order)));
+      setApiError(null);
+    } catch (error) {
+      reportError(error, "订单状态保存失败");
+    }
+  };
+
+  const updateFulfillmentDraft = (order: Order, patch: Partial<Order>) => {
+    setFulfillmentDrafts((current) => {
+      const existing = current[order.id];
+      return {
+        ...current,
+        [order.id]: {
+          ...existing,
+          shippingCompany: order.shippingCompany,
+          trackingNumber: order.trackingNumber,
+          logisticsStatus: order.logisticsStatus,
+          deliveryNote: order.deliveryNote,
+          status: order.status,
+          ...patch,
+        },
+      };
+    });
+  };
+
+  const saveFulfillment = async (order: Order) => {
+    const draft = fulfillmentDrafts[order.id] ?? order;
+    try {
+      const updated = await apiRequest<Order>(`/api/admin/orders/${order.id}/fulfillment`, {
+        method: "PATCH",
+        body: JSON.stringify(draft),
+      });
+      setOrders((current) => current.map((item) => (item.id === order.id ? updated : item)));
+      setFulfillmentDrafts((current) => {
+        const next = { ...current };
+        delete next[order.id];
+        return next;
+      });
+      setApiError(null);
+    } catch (error) {
+      reportError(error, "发货信息保存失败");
+    }
+  };
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-ember">{isHq ? "总部账号" : "门店账号"}</p>
+          <h1 className="mt-2 text-4xl font-semibold">运营后台</h1>
+          <p className="mt-3 max-w-2xl text-cocoa/60">
+            {isHq
+              ? "总部负责商品、开团日、门店改名和库存分配。"
+              : "门店只处理本店库存、订单、自提名单和现场收银。"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate("/admin/pos")}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-cocoa px-5 py-3 font-semibold text-flour transition hover:bg-crust"
+        >
+          <ReceiptText className="h-5 w-5" />
+          进入现场收银
+        </button>
+        {isHq && (
+          <a
+            href="#products"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-cocoa shadow-sm transition hover:bg-oat"
+          >
+            <Upload className="h-5 w-5" />
+            商品与图片
+          </a>
+        )}
+      </div>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric label="当前订单" value={`${scopedOrders.length} 单`} icon={ClipboardList} />
+        <Metric label="自提订单" value={`${pickupCount} 单`} icon={Store} />
+        <Metric label="待发货" value={`${shippingCount} 单`} icon={Truck} />
+        <Metric label="订单金额" value={`¥${todayTotal}`} icon={Wallet} />
+      </div>
+
+      <section className="mt-10 grid gap-6 lg:grid-cols-2">
+        <WorkList
+          title="生产清单"
+          hint={isHq ? "总部看全部待生产订单" : "本店待生产订单"}
+          emptyText="暂无待生产订单"
+          orders={productionOrders}
+          stores={stores}
+        />
+        <WorkList
+          title="自提名单"
+          hint={isHq ? "全部门店未完成自提" : "本店未完成自提"}
+          emptyText="暂无待自提订单"
+          orders={pickupOrders}
+          stores={stores}
+        />
+      </section>
+
+      <ShippingQueue
+        orders={shippingOrders}
+        stores={stores}
+        drafts={fulfillmentDrafts}
+        updateDraft={updateFulfillmentDraft}
+        saveFulfillment={saveFulfillment}
+      />
+
+      {isHq && (
+        <section className="mt-10 grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
+          <div className="admin-panel">
+            <h2 className="text-2xl font-semibold">本轮预订设置</h2>
+            <div className="mt-5 space-y-4">
+              <label className="flex items-center justify-between rounded-lg bg-flour p-4">
+                <span>
+                  <span className="block font-semibold">开放顾客下单</span>
+                  <span className="text-sm text-cocoa/52">关闭后顾客只能浏览产品目录。</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={batchSale.isOpen}
+                  onChange={(event) => updateBatchSale({ isOpen: event.target.checked })}
+                  className="h-5 w-5 accent-cocoa"
+                />
+              </label>
+              <input
+                className="input-field"
+                value={batchSale.deadline}
+                onChange={(event) => updateBatchSale({ deadline: event.target.value })}
+                aria-label="预订截止时间"
+              />
+              <input
+                className="input-field"
+                value={batchSale.ovenBatch}
+                onChange={(event) => updateBatchSale({ ovenBatch: event.target.value })}
+                aria-label="出炉批次"
+              />
+              <div className="rounded-lg bg-flour p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span>
+                    <span className="block font-semibold">今日出炉批次</span>
+                    <span className="text-sm text-cocoa/52">设置前台“今日出炉”展示的时间和产品。</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={addOvenBatch}
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-cocoa"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    增加一炉
+                  </button>
+                </div>
+                <div className="mt-4 space-y-4">
+                  {batchSale.ovenBatches.map((batch) => (
+                    <div key={batch.id} className="rounded-lg border border-cocoa/8 bg-white p-3">
+                      <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                        <input
+                          className="input-field py-2"
+                          value={batch.label}
+                          onChange={(event) => updateOvenBatch(batch.id, { label: event.target.value })}
+                          aria-label="批次名称"
+                        />
+                        <input
+                          className="input-field py-2"
+                          value={batch.time}
+                          onChange={(event) => updateOvenBatch(batch.id, { time: event.target.value })}
+                          aria-label="出炉时间"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeOvenBatch(batch.id)}
+                          className="rounded-full bg-oat px-3 py-2 text-xs font-semibold text-cocoa/62"
+                        >
+                          删除
+                        </button>
+                      </div>
+                      <div className="mt-3 flex max-h-32 flex-wrap gap-2 overflow-y-auto">
+                        {products.map((product) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => toggleBatchProduct(batch, product.id)}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                              batch.productIds.includes(product.id)
+                                ? "bg-cocoa text-flour"
+                                : "bg-oat text-cocoa/58"
+                            }`}
+                          >
+                            {product.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg bg-flour p-4">
+                <p className="font-semibold">私域付款设置</p>
+                <div className="mt-3 grid gap-3">
+                  <input
+                    className="input-field bg-white"
+                    value={batchSale.paymentWechatId}
+                    onChange={(event) => updateBatchSale({ paymentWechatId: event.target.value })}
+                    aria-label="主理人微信号"
+                  />
+                  <textarea
+                    className="input-field min-h-20 resize-none bg-white"
+                    value={batchSale.paymentInstruction}
+                    onChange={(event) => updateBatchSale({ paymentInstruction: event.target.value })}
+                    aria-label="付款说明"
+                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-cocoa shadow-sm">
+                      <QrCode className="h-4 w-4" />
+                      上传微信二维码
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(event) => uploadPaymentQr(event.target.files?.[0])}
+                      />
+                    </label>
+                    {batchSale.paymentQrUrl && (
+                      <button
+                        type="button"
+                        onClick={() => updateBatchSale({ paymentQrUrl: "" })}
+                        className="text-sm font-semibold text-cocoa/52"
+                      >
+                        移除二维码
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm">
+                  <span className="mb-2 block text-cocoa/52">免运门槛</span>
+                  <input
+                    className="input-field"
+                    type="number"
+                    value={batchSale.freeShippingThreshold}
+                    onChange={(event) =>
+                      updateBatchSale({ freeShippingThreshold: Number(event.target.value) })
+                    }
+                  />
+                </label>
+                <label className="text-sm">
+                  <span className="mb-2 block text-cocoa/52">基础运费</span>
+                  <input
+                    className="input-field"
+                    type="number"
+                    value={batchSale.baseShippingFee}
+                    onChange={(event) =>
+                      updateBatchSale({ baseShippingFee: Number(event.target.value) })
+                    }
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="admin-panel">
+            <h2 className="text-2xl font-semibold">门店与账号</h2>
+            <div className="mt-5 grid gap-3">
+              {stores.map((store) => (
+                <div key={store.id} className="rounded-lg bg-flour p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold text-cocoa/44">{store.id}</span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs text-cocoa/56">
+                      {store.role === "central" ? "中央厨房" : "自提点"}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1.2fr_auto] md:items-center">
+                    <input
+                      className="input-field"
+                      value={store.name}
+                      onChange={(event) => updateStore(store.id, "name", event.target.value)}
+                      aria-label="门店名称"
+                    />
+                    <input
+                      className="input-field"
+                      value={store.address}
+                      onChange={(event) => updateStore(store.id, "address", event.target.value)}
+                      aria-label="门店地址"
+                    />
+                    <label className="flex items-center gap-2 text-sm text-cocoa/62">
+                      <input
+                        type="checkbox"
+                        checked={store.pickupOpen}
+                        onChange={(event) => updateStore(store.id, "pickupOpen", event.target.checked)}
+                        className="h-4 w-4 accent-cocoa"
+                      />
+                      开放自提
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="mt-10 grid gap-8 lg:grid-cols-[1.1fr_.9fr]">
+        <div className="admin-panel">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">订单</h2>
+            <span className="text-sm text-cocoa/48">{isHq ? "全部门店" : "仅本店相关"}</span>
+          </div>
+          <div className="mt-5 overflow-x-auto">
+            <table className="min-w-[980px] w-full text-left text-sm">
+              <thead className="text-cocoa/48">
+                <tr>
+                  <th className="py-3 font-medium">订单</th>
+                  <th className="py-3 font-medium">时间</th>
+                  <th className="py-3 font-medium">顾客</th>
+                  <th className="py-3 font-medium">商品</th>
+                  <th className="py-3 font-medium">类型</th>
+                  <th className="py-3 font-medium">自提/配送</th>
+                  <th className="py-3 font-medium">付款</th>
+                  <th className="py-3 font-medium">状态</th>
+                  <th className="py-3 font-medium">归属</th>
+                  <th className="py-3 text-right font-medium">金额</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scopedOrders.map((order) => (
+                  <tr key={order.id} className="border-t border-cocoa/8">
+                    <td className="py-4 font-semibold">{order.id}</td>
+                    <td className="py-4 text-cocoa/56">{order.createdAt}</td>
+                    <td className="py-4 text-cocoa/66">
+                      <span className="block font-semibold">{order.customerName || order.receiver || "未登记"}</span>
+                      <span className="text-xs text-cocoa/42">{order.customerPhone || order.phone || "-"}</span>
+                    </td>
+                    <td className="py-4 text-cocoa/66">
+                      {order.items.map((item) => `${item.name} x${item.qty}`).join(" / ")}
+                    </td>
+                    <td className="py-4">{order.type === "online" ? "线上" : "收银"}</td>
+                    <td className="py-4">{order.deliveryMethod}</td>
+                    <td className="py-4 text-cocoa/56">{order.paymentStatus || "待付款确认"}</td>
+                    <td className="py-4">
+                      <select
+                        value={order.status}
+                        onChange={(event) => updateOrderStatus(order.id, event.target.value as OrderStatus)}
+                        className={`rounded-full border-0 px-3 py-2 text-xs font-semibold outline-none ${statusStyles[order.status]}`}
+                      >
+                        {orderStatusOptions.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="py-4 text-cocoa/56">{getStoreName(stores, order.pickupStoreId)}</td>
+                    <td className="py-4 text-right font-semibold">¥{order.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="products" className="admin-panel scroll-mt-24">
+          <h2 className="text-2xl font-semibold">商品与图片</h2>
+          <p className="mt-1 text-sm text-cocoa/48">新增产品、上传图片、修改介绍和上下架都在这里处理。</p>
+          {isHq && (
+            <NewProductPanel
+              product={newProduct}
+              setProduct={setNewProduct}
+              createProduct={createProduct}
+              uploadImage={uploadNewProductImage}
+            />
+          )}
+          <div className="mt-5 space-y-3">
+            {products.map((product) => (
+              <div key={product.id} className="rounded-lg bg-flour p-4">
+                <div className="grid gap-3 sm:grid-cols-[80px_minmax(0,1fr)_auto] sm:items-start">
+                  <ProductAdminPreview product={product} />
+                  <div className="min-w-0">
+                    {isHq ? (
+                      <div className="grid gap-2">
+                        <input
+                          className="input-field bg-white py-2"
+                          value={product.name}
+                          onChange={(event) => updateProduct(product.id, { name: event.target.value })}
+                          aria-label={`${product.name}名称`}
+                        />
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <select
+                            className="input-field bg-white py-2"
+                            value={product.category}
+                            onChange={(event) => updateProduct(product.id, { category: event.target.value as Category })}
+                          >
+                            {categories.map((category) => (
+                              <option key={category} value={category}>{category}</option>
+                            ))}
+                          </select>
+                          <input
+                            className="input-field bg-white py-2"
+                            value={product.weight}
+                            onChange={(event) => updateProduct(product.id, { weight: event.target.value })}
+                            aria-label={`${product.name}克重`}
+                          />
+                          <input
+                            className="input-field bg-white py-2"
+                            type="number"
+                            value={product.price}
+                            onChange={(event) => updateProduct(product.id, { price: Number(event.target.value) })}
+                            aria-label={`${product.name}价格`}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <span>
+                        <span className="block font-semibold">{product.name}</span>
+                        <span className="text-sm text-cocoa/48">
+                          {product.weight} · ¥{product.price}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-cocoa/62">
+                    <input
+                      type="checkbox"
+                      disabled={!isHq}
+                      checked={product.isPublished}
+                      onChange={(event) => updateProduct(product.id, { isPublished: event.target.checked })}
+                      className="h-4 w-4 accent-cocoa disabled:opacity-40"
+                    />
+                    上架
+                  </label>
+                </div>
+                {isHq && (
+                  <div className="mt-3 grid gap-3">
+                    <input
+                      className="input-field bg-white"
+                      value={product.description}
+                      onChange={(event) => updateProduct(product.id, { description: event.target.value })}
+                      aria-label={`${product.name}介绍`}
+                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-cocoa shadow-sm">
+                        <Upload className="h-4 w-4" />
+                        上传图片
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(event) => uploadProductImage(product.id, event.target.files?.[0])}
+                        />
+                      </label>
+                      {product.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => updateProduct(product.id, { imageUrl: "" })}
+                          className="text-sm font-semibold text-cocoa/52"
+                        >
+                          移除图片
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-10 admin-panel">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold">库存分配</h2>
+            <p className="mt-2 text-sm text-cocoa/54">
+              总部把中央厨房产量分配到 A/B/C/D，各门店看到自己的可售库存。
+            </p>
+          </div>
+          {!isHq && <span className="rounded-full bg-oat px-4 py-2 text-sm">门店只读</span>}
+        </div>
+        <div className="mt-5 overflow-x-auto">
+          <table className="min-w-[920px] w-full text-left text-sm">
+            <thead className="text-cocoa/48">
+              <tr>
+                <th className="py-3 font-medium">商品</th>
+                <th className="py-3 font-medium">中央库存</th>
+                {stores.map((store) => (
+                  <th key={store.id} className="py-3 font-medium">{store.name}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {products.slice(0, isHq ? products.length : 8).map((product) => (
+                <tr key={product.id} className="border-t border-cocoa/8">
+                  <td className="py-3 font-semibold">{product.name}</td>
+                  <td className="py-3">{inventory[product.id].centralStock}</td>
+                  {stores.map((store) => {
+                    const allocated = inventory[product.id].stores[store.id];
+                    const sold = inventory[product.id].sold[store.id];
+                    return (
+                      <td key={store.id} className="py-3">
+                        {isHq ? (
+                          <input
+                            className="input-field w-24 py-2"
+                            type="number"
+                            value={allocated}
+                            onChange={(event) => updateStoreStock(product.id, store.id, Number(event.target.value))}
+                          />
+                        ) : store.id === activeStoreId ? (
+                          <span className="font-semibold">{Math.max(0, allocated - sold)} 剩余</span>
+                        ) : (
+                          <span className="text-cocoa/34">-</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function WorkList({
+  title,
+  hint,
+  emptyText,
+  orders,
+  stores,
+}: {
+  title: string;
+  hint: string;
+  emptyText: string;
+  orders: Order[];
+  stores: StoreLocation[];
+}) {
+  return (
+    <div className="admin-panel">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold">{title}</h2>
+          <p className="mt-1 text-sm text-cocoa/48">{hint}</p>
+        </div>
+        <span className="rounded-full bg-oat px-3 py-1 text-xs font-semibold text-cocoa/58">
+          {orders.length} 单
+        </span>
+      </div>
+      <div className="mt-5 space-y-3">
+        {orders.length === 0 ? (
+          <p className="rounded-lg bg-flour p-4 text-sm text-cocoa/54">{emptyText}</p>
+        ) : (
+          orders.slice(0, 6).map((order) => (
+            <div key={order.id} className="rounded-lg border border-cocoa/8 bg-flour p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-semibold">
+                  {order.id}
+                  {order.pickupCode ? <span className="ml-2 text-cocoa/48">取货码 {order.pickupCode}</span> : null}
+                </p>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[order.status]}`}>
+                  {order.status}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-cocoa/64">
+                {order.items.map((item) => `${item.name} x${item.qty}`).join(" / ")}
+              </p>
+              <p className="mt-2 text-xs text-cocoa/42">
+                {getStoreName(stores, order.pickupStoreId)} · {order.deliveryMethod} · {order.createdAt}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ShippingQueue({
+  orders,
+  stores,
+  drafts,
+  updateDraft,
+  saveFulfillment,
+}: {
+  orders: Order[];
+  stores: StoreLocation[];
+  drafts: Record<string, Pick<Order, "shippingCompany" | "trackingNumber" | "logisticsStatus" | "deliveryNote" | "status">>;
+  updateDraft: (order: Order, patch: Partial<Order>) => void;
+  saveFulfillment: (order: Order) => void;
+}) {
+  return (
+    <section className="mt-10 admin-panel">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold">发货队列</h2>
+          <p className="mt-1 text-sm text-cocoa/48">顺丰快递和本地配送订单在这里填写运单号、跑腿备注和物流状态。</p>
+        </div>
+        <span className="rounded-full bg-oat px-3 py-1 text-xs font-semibold text-cocoa/58">{orders.length} 单待处理</span>
+      </div>
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        {orders.length === 0 ? (
+          <p className="rounded-lg bg-flour p-4 text-sm text-cocoa/54 lg:col-span-2">暂无需要发货或配送的订单。</p>
+        ) : (
+          orders.map((order) => {
+            const draft = { ...order, ...(drafts[order.id] ?? {}) };
+            return (
+              <div key={order.id} className="rounded-lg border border-cocoa/8 bg-flour p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{order.id}</p>
+                    <p className="mt-1 text-sm text-cocoa/52">
+                      {order.deliveryMethod} · {getStoreName(stores, order.pickupStoreId)} · ¥{order.total}
+                    </p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[order.status]}`}>
+                    {order.status}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-cocoa/66">
+                  {order.items.map((item) => `${item.name} x${item.qty}`).join(" / ")}
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <input
+                    className="input-field bg-white"
+                    value={draft.shippingCompany ?? ""}
+                    onChange={(event) => updateDraft(order, { shippingCompany: event.target.value })}
+                    placeholder="快递/跑腿公司"
+                  />
+                  <input
+                    className="input-field bg-white"
+                    value={draft.trackingNumber ?? ""}
+                    onChange={(event) => updateDraft(order, { trackingNumber: event.target.value })}
+                    placeholder="运单号/跑腿单号"
+                  />
+                  <input
+                    className="input-field bg-white sm:col-span-2"
+                    value={draft.logisticsStatus ?? ""}
+                    onChange={(event) => updateDraft(order, { logisticsStatus: event.target.value })}
+                    placeholder="物流状态，例如：已通知跑腿，预计 17:30 送达"
+                  />
+                  <textarea
+                    className="input-field min-h-20 resize-none bg-white sm:col-span-2"
+                    value={draft.deliveryNote ?? ""}
+                    onChange={(event) => updateDraft(order, { deliveryNote: event.target.value })}
+                    placeholder="配送备注"
+                  />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateDraft(order, { status: "已发货", logisticsStatus: draft.logisticsStatus || "已发货" });
+                      void saveFulfillment({ ...order, ...draft, status: "已发货", logisticsStatus: draft.logisticsStatus || "已发货" });
+                    }}
+                    className="inline-flex items-center gap-2 rounded-full bg-cocoa px-4 py-2 text-sm font-semibold text-flour"
+                  >
+                    <Truck className="h-4 w-4" />
+                    标记已发货
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void saveFulfillment(order)}
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-cocoa shadow-sm"
+                  >
+                    <BadgeCheck className="h-4 w-4" />
+                    保存
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}
+
+function NewProductPanel({
+  product,
+  setProduct,
+  createProduct,
+  uploadImage,
+}: {
+  product: {
+    name: string;
+    category: Category;
+    weight: string;
+    price: number;
+    description: string;
+    ingredients: string;
+    imageUrl: string;
+    isPublished: boolean;
+    featured: boolean;
+  };
+  setProduct: Dispatch<SetStateAction<{
+    name: string;
+    category: Category;
+    weight: string;
+    price: number;
+    description: string;
+    ingredients: string;
+    imageUrl: string;
+    isPublished: boolean;
+    featured: boolean;
+  }>>;
+  createProduct: () => void;
+  uploadImage: (file?: File) => void;
+}) {
+  return (
+    <div className="mt-5 rounded-lg border border-dashed border-cocoa/18 bg-flour p-4">
+      <div className="flex items-center gap-2">
+        <PackageOpen className="h-5 w-5 text-crust" />
+        <p className="font-semibold">新增产品</p>
+      </div>
+      <div className="mt-4 grid gap-3">
+        <input
+          className="input-field bg-white"
+          value={product.name}
+          onChange={(event) => setProduct((current) => ({ ...current, name: event.target.value }))}
+          placeholder="产品名称"
+        />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <select
+            className="input-field bg-white"
+            value={product.category}
+            onChange={(event) => setProduct((current) => ({ ...current, category: event.target.value as Category }))}
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+          <input
+            className="input-field bg-white"
+            value={product.weight}
+            onChange={(event) => setProduct((current) => ({ ...current, weight: event.target.value }))}
+            placeholder="克重"
+          />
+          <input
+            className="input-field bg-white"
+            type="number"
+            value={product.price}
+            onChange={(event) => setProduct((current) => ({ ...current, price: Number(event.target.value) }))}
+            placeholder="价格"
+          />
+        </div>
+        <input
+          className="input-field bg-white"
+          value={product.ingredients}
+          onChange={(event) => setProduct((current) => ({ ...current, ingredients: event.target.value }))}
+          placeholder="配料，用逗号分隔"
+        />
+        <textarea
+          className="input-field min-h-20 resize-none bg-white"
+          value={product.description}
+          onChange={(event) => setProduct((current) => ({ ...current, description: event.target.value }))}
+          placeholder="产品介绍"
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-cocoa shadow-sm">
+            <Camera className="h-4 w-4" />
+            选择图片
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => uploadImage(event.target.files?.[0])}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm text-cocoa/62">
+            <input
+              type="checkbox"
+              checked={product.isPublished}
+              onChange={(event) => setProduct((current) => ({ ...current, isPublished: event.target.checked }))}
+              className="h-4 w-4 accent-cocoa"
+            />
+            新品直接上架
+          </label>
+          {product.imageUrl && <span className="text-sm text-green-800">图片已选择</span>}
+        </div>
+        <button
+          type="button"
+          onClick={createProduct}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-cocoa px-5 py-3 text-sm font-semibold text-flour"
+        >
+          <Plus className="h-4 w-4" />
+          添加到商品库
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Metric({ label, value, icon: Icon }: { label: string; value: string; icon: LucideIcon }) {
+  return (
+    <div className="rounded-lg border border-cocoa/10 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-cocoa/48">{label}</span>
+        <Icon className="h-5 w-5 text-crust" />
+      </div>
+      <p className="mt-3 text-3xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function PosPage({
+  products,
+  stores,
+  inventory,
+  activeRole,
+  createOrder,
+  navigate,
+}: {
+  products: Product[];
+  stores: StoreLocation[];
+  inventory: InventoryAllocation;
+  activeRole: RoleId;
+  createOrder: (order: Order) => Promise<Order | null>;
+  navigate: (route: Route) => void;
+}) {
+  const storeId = activeRole === "hq" ? "store-a" : (activeRole as StoreId);
+  const store = stores.find((item) => item.id === storeId) ?? stores[0];
+  const [cart, setCart] = useState<Record<string, number>>({ "salt-roll": 2 });
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("现金");
+  const [lastOrder, setLastOrder] = useState<Order | null>(null);
+  const quickProducts = products.filter((product) => product.isPublished).slice(0, 9);
+  const cartItems = useMemo(
+    () =>
+      Object.entries(cart)
+        .map(([productId, qty]) => {
+          const product = products.find((item) => item.id === productId);
+          return product && qty > 0
+            ? { productId, name: product.name, qty, price: product.price }
+            : null;
+        })
+        .filter(Boolean) as Order["items"],
+    [cart, products],
+  );
+  const subtotal = cartItems.reduce((sum, item) => sum + item.qty * item.price, 0);
+
+  const availableForStore = (productId: string) => {
+    const allocation = inventory[productId];
+    if (!allocation) return 0;
+    return Math.max(0, allocation.stores[storeId] - allocation.sold[storeId]);
+  };
+
+  const updateCart = (productId: string, delta: number) => {
+    const available = availableForStore(productId);
+    setCart((current) => {
+      const nextQty = Math.max(0, Math.min(available, (current[productId] ?? 0) + delta));
+      const next = { ...current, [productId]: nextQty };
+      if (nextQty === 0) delete next[productId];
+      return next;
+    });
+  };
+
+  const checkout = async () => {
+    if (cartItems.length === 0) return;
+    const order: Order = {
+      id: "",
+      type: "pos",
+      items: cartItems,
+      subtotal,
+      shippingFee: 0,
+      total: subtotal,
+      deliveryMethod: "门店自提",
+      paymentMethod,
+      status: "已完成",
+      sourceStoreId: storeId,
+      pickupStoreId: storeId,
+      createdAt: "刚刚",
+    };
+    const savedOrder = await createOrder(order);
+    if (savedOrder) {
+      setLastOrder(savedOrder);
+      setCart({});
+    }
+  };
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-ember">{store.name}</p>
+          <h1 className="mt-2 text-4xl font-semibold">现场收银台</h1>
+          <p className="mt-3 max-w-2xl text-cocoa/60">
+            门店现场拿货结账，订单归属到当前门店账号。
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate("/admin")}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-cocoa shadow-sm transition hover:bg-oat"
+        >
+          <ChevronRight className="h-5 w-5 rotate-180" />
+          返回后台
+        </button>
+      </div>
+
+      <section className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {quickProducts.map((product) => (
+            <button
+              key={product.id}
+              type="button"
+              onClick={() => updateCart(product.id, 1)}
+              className="group rounded-lg border border-cocoa/10 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-soft"
+            >
+              <ProductVisual product={product} />
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <span>
+                    <span className="block text-lg font-semibold">{product.name}</span>
+                    <span className="mt-1 block text-sm text-cocoa/48">
+                      {product.weight} · 本店剩余 {availableForStore(product.id)}
+                    </span>
+                  </span>
+                  <span className="text-xl font-semibold text-crust">¥{product.price}</span>
+                </div>
+                <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-cocoa px-4 py-2 text-sm font-semibold text-flour">
+                  <Plus className="h-4 w-4" />
+                  加到收银单
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <aside className="rounded-lg border border-cocoa/10 bg-white p-5 shadow-soft lg:sticky lg:top-24 lg:self-start">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">当前收银单</h2>
+            <ReceiptText className="h-6 w-6 text-crust" />
+          </div>
+          <div className="mt-5 space-y-3">
+            {cartItems.length === 0 ? (
+              <p className="rounded-lg bg-oat p-4 text-sm text-cocoa/58">选择商品后生成收银单。</p>
+            ) : (
+              cartItems.map((item) => (
+                <div key={item.productId} className="flex items-center justify-between border-b border-cocoa/8 pb-3">
+                  <div>
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-sm text-cocoa/48">¥{item.price} x {item.qty}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => updateCart(item.productId, -1)} className="counter-button" aria-label="减少">
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <button type="button" onClick={() => updateCart(item.productId, 1)} className="counter-button" aria-label="增加">
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <FormLabel label="现场收款" />
+          <div className="grid grid-cols-2 gap-2">
+            {paymentMethods.map((option) => {
+              const Icon = option.icon;
+              const active = paymentMethod === option.method;
+              return (
+                <button
+                  key={option.method}
+                  type="button"
+                  onClick={() => setPaymentMethod(option.method)}
+                  className={`flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold ${
+                    active ? "bg-ember text-white" : "bg-oat text-cocoa/70"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {option.method}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex items-center justify-between border-t border-cocoa/10 pt-5">
+            <span className="text-sm text-cocoa/58">应收</span>
+            <span className="text-4xl font-semibold">¥{subtotal}</span>
+          </div>
+          <button
+            type="button"
+            onClick={checkout}
+            disabled={cartItems.length === 0}
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-cocoa px-5 py-3 font-semibold text-flour transition hover:bg-crust disabled:cursor-not-allowed disabled:bg-cocoa/30"
+          >
+            <BadgeCheck className="h-5 w-5" />
+            完成收银
+          </button>
+          {lastOrder && (
+            <div className="mt-4 rounded-lg bg-green-50 p-4 text-sm text-green-900">
+              {lastOrder.id} 已完成，归属 {store.name}
+              {lastOrder.pickupCode ? `，取货码 ${lastOrder.pickupCode}` : ""}。
+            </div>
+          )}
+        </aside>
+      </section>
+    </main>
+  );
+}
+
+function getStoreName(stores: StoreLocation[], storeId: StoreId) {
+  return stores.find((store) => store.id === storeId)?.name ?? storeId;
+}
+
+export default App;

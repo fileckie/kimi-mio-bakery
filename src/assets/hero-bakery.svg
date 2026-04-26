@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1200" role="img" aria-label="Mio Bakery stone oven bread table">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4dbc2"/>
+      <stop offset="0.52" stop-color="#c98254"/>
+      <stop offset="1" stop-color="#2b211c"/>
+    </linearGradient>
+    <linearGradient id="oven" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#594235"/>
+      <stop offset="1" stop-color="#1f1713"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd28b"/>
+      <stop offset="0.45" stop-color="#e97834"/>
+      <stop offset="1" stop-color="#7e2d1c"/>
+    </linearGradient>
+    <linearGradient id="loaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe1a8"/>
+      <stop offset="0.56" stop-color="#c4662e"/>
+      <stop offset="1" stop-color="#6d321c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffb15f" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#ffb15f" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+  <rect width="1800" height="1200" fill="url(#wall)"/>
+  <rect width="1800" height="1200" fill="#2b211c" opacity=".12"/>
+  <circle cx="1270" cy="470" r="420" fill="url(#glow)" filter="url(#soft)"/>
+  <path d="M760 945c140-98 255-247 260-434 8-266 162-373 382-365 228 8 364 151 363 407-1 202-108 321-248 392H760Z" fill="url(#oven)" opacity=".96"/>
+  <path d="M1084 640c12-142 122-223 274-214 147 8 250 94 262 227 11 117-61 203-205 237-218 51-346-65-331-250Z" fill="#0f0b09"/>
+  <path d="M1208 846c23-83 82-105 119-187 19 67 94 97 92 188-2 82-65 130-112 130-52 0-122-47-99-131Z" fill="url(#flame)" opacity=".9"/>
+  <path d="M1290 918c10-48 44-69 55-116 28 44 61 62 60 114-1 46-35 75-63 75-30 0-63-27-52-73Z" fill="#ffd28b" opacity=".9"/>
+  <rect x="0" y="860" width="1800" height="340" fill="#3b2a22"/>
+  <path d="M0 835c318 35 492-28 743-19 239 8 450 71 685 43 149-18 259-52 372-32v373H0V835Z" fill="#574032"/>
+  <path d="M0 902c367 39 551-31 838-11 266 18 408 65 647 36 139-17 234-41 315-27v300H0V902Z" fill="#7e5b43"/>
+  <g opacity=".97">
+    <ellipse cx="690" cy="805" rx="214" ry="96" fill="url(#loaf)"/>
+    <path d="M520 760c56 35 112 51 183 51 74 0 139-21 187-59" fill="none" stroke="#ffe5b0" stroke-width="17" stroke-linecap="round" opacity=".7"/>
+    <path d="M604 725c18 47 20 95 8 144M712 711c20 54 21 104 3 153M813 735c18 48 18 88 3 126" fill="none" stroke="#7d351f" stroke-width="9" stroke-linecap="round" opacity=".55"/>
+  </g>
+  <g opacity=".98">
+    <ellipse cx="1000" cy="854" rx="166" ry="72" fill="url(#loaf)"/>
+    <path d="M888 824c44 25 90 38 139 35 43-2 82-15 114-38" fill="none" stroke="#ffe5b0" stroke-width="13" stroke-linecap="round" opacity=".72"/>
+    <path d="M951 790c10 43 7 78-8 113M1035 791c12 39 10 76-7 112" fill="none" stroke="#7d351f" stroke-width="8" stroke-linecap="round" opacity=".5"/>
+  </g>
+  <g opacity=".96">
+    <ellipse cx="425" cy="878" rx="142" ry="58" fill="url(#loaf)"/>
+    <path d="M330 851c36 22 74 31 117 30 36-1 67-11 94-29" fill="none" stroke="#ffe5b0" stroke-width="10" stroke-linecap="round" opacity=".72"/>
+  </g>
+  <g fill="none" stroke="#fff5e6" stroke-linecap="round" opacity=".32">
+    <path d="M578 632c-42-58 19-92-10-142" stroke-width="9"/>
+    <path d="M723 645c-38-70 38-101 0-164" stroke-width="8"/>
+    <path d="M938 691c-30-48 23-75 1-119" stroke-width="7"/>
+  </g>
+  <rect width="900" height="1200" fill="url(#wall)" opacity=".18"/>
+  <rect width="1800" height="1200" fill="#1b130f" opacity=".18"/>
+</svg>
