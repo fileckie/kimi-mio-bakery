@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "start": "node server/index.mjs",
-    "deploy:ecs": "bash scripts/deploy-ecs.sh"
+    "deploy:ecs": "bash scripts/deploy-ecs.sh",
+    "deploy": "bash scripts/deploy-all.sh"
   },
   "dependencies": {
     "@rollup/wasm-node": "^4.60.2",
