@@ -10,7 +10,7 @@ export type OrderStatus = "待确认" | "待生产" | "待自提" | "待发货" 
 export type Route = "/" | "/admin" | "/admin/pos";
 export type RoleId = "hq" | "store-a" | "store-b" | "store-c" | "store-d";
 export type StoreId = "store-a" | "store-b" | "store-c" | "store-d";
-export type AdminTab = "overview" | "orders" | "products" | "settings";
+export type AdminTab = "overview" | "orders" | "members" | "products" | "settings";
 
 export interface Product {
   id: string;

@@ -95,7 +95,7 @@ export function ProductionSheetPrint({ sheet, stores, batchSale }: Props) {
       </div>
 
       {/* Production sheet content */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-soft print:shadow-none print:border-2 print:border-kiln print:bg-white">
+      <div className="rounded-2xl border border-border bg-white p-6 shadow-soft print:shadow-none print:border-2 print:border-kiln print:bg-white print:break-inside-avoid">
         {/* Summary bar */}
         <div className="flex flex-wrap items-center gap-4 border-b border-border pb-4 mb-4">
           <div className="rounded-xl bg-ash px-4 py-2">

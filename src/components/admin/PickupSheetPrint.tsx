@@ -73,7 +73,7 @@ export function PickupSheetPrint({ orders, stores }: Props) {
         <Store className="h-5 w-5 text-ember" />
         门店自提单
       </h3>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 print:grid-cols-1">
         {stores.map((store) => {
           const storeOrders = orders.filter(
             (o) => o.pickupStoreId === store.id && o.deliveryMethod === "门店自提" && o.status !== "已完成"

@@ -12,11 +12,13 @@ import { MobileCheckout } from "./MobileCheckout";
 import { OrderLookup } from "./OrderLookup";
 import { StoreInfo } from "./StoreInfo";
 import { OrderSuccessModal } from "./OrderSuccessModal";
+import { MyOrdersDrawer } from "./MyOrdersDrawer";
 
 export function CustomerPage() {
   const { products, stores, batchSale, inventory } = useAppStore();
   const { items: cartItems, pickupStoreId } = useCartStore(useShallow((s) => ({ items: s.items, pickupStoreId: s.pickupStoreId })));
   const [successOrder, setSuccessOrder] = useState<Order | null>(null);
+  const [myOrdersOpen, setMyOrdersOpen] = useState(false);
 
   const featuredProducts = batchSale.featuredProductIds
     .map((pid) => products.find((p) => p.id === pid))
@@ -29,7 +31,7 @@ export function CustomerPage() {
 
   return (
     <>
-      <CustomerHeader />
+      <CustomerHeader onOpenMyOrders={() => setMyOrdersOpen(true)} />
       <main className="pb-24 lg:pb-0">
         <HeroSection batchSale={batchSale} featuredProducts={featuredProducts} inventory={inventory} />
         <FeatureEntrances />
@@ -73,7 +75,8 @@ export function CustomerPage() {
         <CheckoutPanel batchSale={batchSale} stores={stores} products={products} onOrderSuccess={setSuccessOrder} />
       </MobileCheckout>
 
-      {successOrder && <OrderSuccessModal order={successOrder} stores={stores} onClose={() => setSuccessOrder(null)} />}
+      {successOrder && <OrderSuccessModal order={successOrder} stores={stores} batchSale={batchSale} onClose={() => setSuccessOrder(null)} />}
+      <MyOrdersDrawer open={myOrdersOpen} onClose={() => setMyOrdersOpen(false)} />
     </>
   );
 }

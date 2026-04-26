@@ -295,14 +295,14 @@ export function insertOrder(order) {
 
 export function registerCustomer({ name, phone, password }) {
   const cleanPhone = normalizePhone(phone);
-  if (!name || !cleanPhone || !password) throw new Error("请填写姓名、手机号和密码");
+  if (!name || !cleanPhone) throw new Error("请填写姓名和手机号");
   const existing = db.prepare("SELECT * FROM customers WHERE phone = ?").get(cleanPhone);
   if (existing) throw new Error("这个手机号已经注册，请直接登录");
   const customer = {
     id: `C${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`,
     name: String(name).trim(),
     phone: cleanPhone,
-    passwordHash: hashPassword(password),
+    passwordHash: password ? hashPassword(password) : "",
     createdAt: new Date().toISOString(),
   };
   db.prepare("INSERT INTO customers (id, name, phone, passwordHash, createdAt) VALUES (?, ?, ?, ?, ?)").run(
@@ -318,10 +318,29 @@ export function registerCustomer({ name, phone, password }) {
 export function loginCustomer({ phone, password }) {
   const cleanPhone = normalizePhone(phone);
   const customer = db.prepare("SELECT * FROM customers WHERE phone = ?").get(cleanPhone);
-  if (!customer || customer.passwordHash !== hashPassword(password)) {
+  if (!customer) throw new Error("手机号未注册");
+  // If customer has no password (new simplified flow), skip password check
+  if (customer.passwordHash && customer.passwordHash !== hashPassword(password || "")) {
     throw new Error("手机号或密码不正确");
   }
   return publicCustomer(customer);
+}
+
+// Unified authenticate: register if new, login if exists — no password required
+export function authenticateCustomer({ name, phone }) {
+  const cleanPhone = normalizePhone(phone);
+  if (!name || !cleanPhone) throw new Error("请填写姓名和手机号");
+  const existing = db.prepare("SELECT * FROM customers WHERE phone = ?").get(cleanPhone);
+  if (existing) {
+    // Update name if changed
+    if (existing.name !== String(name).trim()) {
+      db.prepare("UPDATE customers SET name = ? WHERE id = ?").run(String(name).trim(), existing.id);
+      existing.name = String(name).trim();
+    }
+    return publicCustomer(existing);
+  }
+  // Auto-register
+  return registerCustomer({ name, phone });
 }
 
 export function createProduct(product) {
@@ -437,9 +456,41 @@ export function updateInventory(productId, storeId, allocated) {
   return buildInventory();
 }
 
+export function getCustomers() {
+  const customers = db.prepare("SELECT * FROM customers ORDER BY createdAt DESC").all();
+  return customers.map((c) => {
+    const stats = db.prepare("SELECT COUNT(*) as orderCount, COALESCE(SUM(total), 0) as totalSpent FROM orders WHERE customerId = ?").get(c.id);
+    return {
+      ...publicCustomer(c),
+      orderCount: stats?.orderCount || 0,
+      totalSpent: stats?.totalSpent || 0,
+    };
+  });
+}
+
+export function getCustomerOrders(customerId) {
+  return db.prepare("SELECT * FROM orders WHERE customerId = ? ORDER BY createdAt DESC").all(customerId).map(mapOrderWithItems);
+}
+
 export function updateOrderStatus(id, status) {
   db.prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, id);
   return getOrder(id);
+}
+
+export function batchUpdateOrderStatus(ids, status) {
+  if (!Array.isArray(ids) || ids.length === 0) throw new Error("没有选择订单");
+  const stmt = db.prepare("UPDATE orders SET status = ? WHERE id = ?");
+  db.exec("BEGIN");
+  try {
+    for (const id of ids) {
+      stmt.run(status, id);
+    }
+    db.exec("COMMIT");
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+  return { updated: ids.length, status };
 }
 
 export function updateOrderFulfillment(id, patch) {

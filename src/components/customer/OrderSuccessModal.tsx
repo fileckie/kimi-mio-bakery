@@ -1,23 +1,27 @@
-import { X, BadgeCheck, Download } from "lucide-react";
-import type { Order, StoreLocation } from "../../types";
+import { useState } from "react";
+import { X, BadgeCheck, Download, MessageCircle, Copy, Check } from "lucide-react";
+import type { Order, StoreLocation, BatchSale } from "../../types";
 import { getStoreName } from "../../lib/utils";
 
 interface Props {
   order: Order;
   stores: StoreLocation[];
+  batchSale: BatchSale;
   onClose: () => void;
 }
 
-export function OrderSuccessModal({ order, stores, onClose }: Props) {
+export function OrderSuccessModal({ order, stores, batchSale, onClose }: Props) {
+  const [copied, setCopied] = useState(false);
+
   const saveImage = () => {
     const canvas = document.createElement("canvas");
     canvas.width = 600;
-    canvas.height = 700;
+    canvas.height = 800;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.fillStyle = "#FAF6F0";
-    ctx.fillRect(0, 0, 600, 700);
+    ctx.fillRect(0, 0, 600, 800);
 
     ctx.fillStyle = "#1E1712";
     ctx.textAlign = "center";
@@ -55,7 +59,7 @@ export function OrderSuccessModal({ order, stores, onClose }: Props) {
     ctx.fillText(`配送方式: ${order.deliveryMethod}`, 40, y); y += 26;
     if (order.pickupCode) ctx.fillText(`取货暗号: ${order.pickupCode}`, 40, y);
 
-    y += 60;
+    y += 50;
     ctx.textAlign = "center"; ctx.fillStyle = "#E84A2E"; ctx.font = "italic 18px serif";
     ctx.fillText("面团已入单，窑火为你而燃", 300, y);
 
@@ -65,9 +69,16 @@ export function OrderSuccessModal({ order, stores, onClose }: Props) {
     link.click();
   };
 
+  const copyWechat = () => {
+    navigator.clipboard.writeText(batchSale.paymentWechatId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-[70] bg-kiln/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-elevated animate-slide-up">
+      <div className="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-8 shadow-elevated animate-slide-up">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
@@ -95,6 +106,48 @@ export function OrderSuccessModal({ order, stores, onClose }: Props) {
           <div className="pt-2 text-muted">
             <p>{getStoreName(stores, order.pickupStoreId)} · {order.deliveryMethod}</p>
             {order.pickupCode && <p className="mt-1">取货暗号 <span className="font-mono font-bold text-kiln">{order.pickupCode}</span></p>}
+          </div>
+        </div>
+
+        {/* Payment guidance */}
+        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageCircle className="h-5 w-5 text-amber-700" />
+            <p className="font-semibold text-amber-900">下一步：完成付款</p>
+          </div>
+
+          {batchSale.paymentQrUrl ? (
+            <div className="text-center">
+              <img src={batchSale.paymentQrUrl} alt="微信二维码" className="mx-auto h-40 w-40 rounded-xl border border-amber-200 object-contain bg-white" />
+              <p className="mt-2 text-xs text-amber-700">扫码添加主理人微信，发送订单截图转账</p>
+              <button
+                onClick={() => {
+                  const link = document.createElement("a");
+                  link.href = batchSale.paymentQrUrl;
+                  link.download = "mio-wechat-qr.png";
+                  link.click();
+                }}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 hover:text-amber-900"
+              >
+                <Download className="h-3.5 w-3.5" />保存二维码
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-amber-800">{batchSale.paymentInstruction}</p>
+          )}
+
+          <div className="mt-3 flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-amber-200">
+            <div>
+              <p className="text-xs text-amber-600">主理人微信</p>
+              <p className="font-mono font-bold text-amber-900">{batchSale.paymentWechatId}</p>
+            </div>
+            <button
+              onClick={copyWechat}
+              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-200 transition"
+            >
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? "已复制" : "复制"}
+            </button>
           </div>
         </div>
 

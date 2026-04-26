@@ -20,11 +20,16 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
 export const api = {
   bootstrap: () => apiRequest<BootstrapPayload>("/api/bootstrap"),
   
-  // Customers
-  registerCustomer: (body: { name: string; phone: string; password: string }) =>
+  // Customers — simplified: no password required
+  authenticateCustomer: (body: { name: string; phone: string }) =>
+    apiRequest<Customer>("/api/customers/authenticate", { method: "POST", body: JSON.stringify(body) }),
+  registerCustomer: (body: { name: string; phone: string; password?: string }) =>
     apiRequest<Customer>("/api/customers/register", { method: "POST", body: JSON.stringify(body) }),
-  loginCustomer: (body: { phone: string; password: string }) =>
+  loginCustomer: (body: { phone: string; password?: string }) =>
     apiRequest<Customer>("/api/customers/login", { method: "POST", body: JSON.stringify(body) }),
+  getCustomerOrders: (customerId: string) =>
+    apiRequest<Order[]>(`/api/customers/${encodeURIComponent(customerId)}/orders`),
+  getCustomers: () => apiRequest<(Customer & { orderCount: number; totalSpent: number })[]>("/api/admin/customers"),
   
   // Orders
   createOrder: (order: Order) =>
@@ -57,4 +62,6 @@ export const api = {
   getProductionSheet: (id: string) => apiRequest<ProductionSheet>(`/api/admin/production-sheets/${encodeURIComponent(id)}`),
   updateProductionSheetStatus: (id: string, status: string) =>
     apiRequest<ProductionSheet>(`/api/admin/production-sheets/${encodeURIComponent(id)}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  batchUpdateOrderStatus: (ids: string[], status: string) =>
+    apiRequest<{ updated: number; status: string }>("/api/admin/orders/batch-status", { method: "POST", body: JSON.stringify({ ids, status }) }),
 };

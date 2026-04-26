@@ -1,9 +1,13 @@
 import {
+  authenticateCustomer,
+  batchUpdateOrderStatus,
   closeBatchAndCreateSheet,
   createProduct,
   findOrderByCode,
   getBatchSale,
   getBootstrap,
+  getCustomers,
+  getCustomerOrders,
   getOrder,
   getProductPrices,
   getProductionSheet,
@@ -45,6 +49,30 @@ export async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/customers/login") {
     sendJson(res, 200, loginCustomer(await readJson(req)));
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/customers/authenticate") {
+    sendJson(res, 200, authenticateCustomer(await readJson(req)));
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/admin/customers") {
+    sendJson(res, 200, getCustomers());
+    return;
+  }
+
+  const customerOrdersMatch = url.pathname.match(/^\/api\/customers\/([^/]+)\/orders$/);
+  if (req.method === "GET" && customerOrdersMatch) {
+    const orders = getCustomerOrders(decodeURIComponent(customerOrdersMatch[1]));
+    sendJson(res, 200, orders);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/admin/orders/batch-status") {
+    const { ids, status } = await readJson(req);
+    const result = batchUpdateOrderStatus(ids, status);
+    sendJson(res, 200, result);
     return;
   }
 

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ClipboardList, Store, Truck, Wallet, PackageCheck, TrendingUp, Flame, Clock, Lock, Printer } from "lucide-react";
+import { ClipboardList, Store, Truck, Wallet, PackageCheck, TrendingUp, Flame, Clock, Lock, Printer, Unlock } from "lucide-react";
 import type { Order, StoreLocation, BatchSale, Product, ProductionSheet } from "../../types";
 import { useAppStore } from "../../stores/appStore";
 import { ProductionSheetPrint } from "./ProductionSheetPrint";
 import { PickupSheetPrint } from "./PickupSheetPrint";
 import { getStoreName } from "../../lib/utils";
+import { api } from "../../lib/api";
 
 interface DashboardProps {
   orders: Order[];
@@ -30,6 +31,18 @@ export function AdminDashboard({ orders, stores, isHq, batchSale, products }: Da
     setClosing(true);
     await closeBatch();
     setClosing(false);
+  };
+
+  const [reopening, setReopening] = useState(false);
+  const handleReopenBatch = async () => {
+    setReopening(true);
+    try {
+      await api.updateBatchSale({ isOpen: true });
+      useAppStore.getState().refreshData();
+    } catch {
+      alert("重新开窑失败");
+    }
+    setReopening(false);
   };
 
   const activeSheet = productionSheets.find((s) => s.id === activeSheetId);
@@ -74,7 +87,7 @@ export function AdminDashboard({ orders, stores, isHq, batchSale, products }: Da
 
   return (
     <div className="space-y-8">
-      {/* Close batch banner */}
+      {/* Batch control banner */}
       {batchSale?.isOpen && productionOrders.length > 0 && (
         <div className="rounded-2xl border border-ember/20 bg-ember/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -88,6 +101,22 @@ export function AdminDashboard({ orders, stores, isHq, batchSale, products }: Da
           >
             <Lock className="h-4 w-4" />
             {closing ? "封窑中..." : "封窑截单 · 生成窑烤单"}
+          </button>
+        </div>
+      )}
+      {!batchSale?.isOpen && (
+        <div className="rounded-2xl border border-border bg-ash p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p className="font-semibold text-kiln">本轮已封窑</p>
+            <p className="font-hand text-sm text-muted">如需临时加单，可重新开窑，顾客即可继续下单</p>
+          </div>
+          <button
+            onClick={handleReopenBatch}
+            disabled={reopening}
+            className="inline-flex items-center gap-2 rounded-full bg-kiln px-6 py-3 text-sm font-semibold text-ash hover:bg-kiln-light transition disabled:opacity-50 shadow-soft"
+          >
+            <Unlock className="h-4 w-4" />
+            {reopening ? "开窑中..." : "重新开窑"}
           </button>
         </div>
       )}

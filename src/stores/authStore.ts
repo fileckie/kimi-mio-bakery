@@ -9,40 +9,26 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   
-  login: (phone: string, password: string) => Promise<void>;
-  register: (name: string, phone: string, password: string) => Promise<void>;
+  authenticate: (name: string, phone: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       customer: null,
       isLoading: false,
       error: null,
 
-      login: async (phone, password) => {
+      authenticate: async (name, phone) => {
         set({ isLoading: true, error: null });
         try {
-          const customer = await api.loginCustomer({ phone, password });
+          const customer = await api.authenticateCustomer({ name, phone });
           set({ customer, isLoading: false });
-          useUIStore.getState().addToast({ type: "success", message: `欢迎回来，${customer.name}` });
+          useUIStore.getState().addToast({ type: "success", message: `欢迎，${customer.name}` });
         } catch (err) {
           const msg = err instanceof Error ? err.message : "登录失败";
-          set({ error: msg, isLoading: false });
-          useUIStore.getState().addToast({ type: "error", message: msg });
-        }
-      },
-
-      register: async (name, phone, password) => {
-        set({ isLoading: true, error: null });
-        try {
-          const customer = await api.registerCustomer({ name, phone, password });
-          set({ customer, isLoading: false });
-          useUIStore.getState().addToast({ type: "success", message: `注册成功，欢迎 ${customer.name}` });
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "注册失败";
           set({ error: msg, isLoading: false });
           useUIStore.getState().addToast({ type: "error", message: msg });
         }

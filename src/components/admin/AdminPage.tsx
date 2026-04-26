@@ -7,6 +7,7 @@ import { AdminDashboard } from "./AdminDashboard";
 import { OrdersPanel } from "./OrdersPanel";
 import { ProductsPanel } from "./ProductsPanel";
 import { SettingsPanel } from "./SettingsPanel";
+import { MembersPanel } from "./MembersPanel";
 
 export function AdminPage() {
   const { products, stores, batchSale, inventory, orders, activeRole, refreshData, setRoute, refreshProductionSheets } = useAppStore();
@@ -25,6 +26,7 @@ export function AdminPage() {
   const tabs = [
     { id: "overview" as const, label: "概览" },
     { id: "orders" as const, label: "订单" },
+    { id: "members" as const, label: "会员" },
     { id: "products" as const, label: "商品" },
     { id: "settings" as const, label: "设置" },
   ];
@@ -67,6 +69,7 @@ export function AdminPage() {
         <div className="mt-8">
           {adminTab === "overview" && <AdminDashboard orders={scopedOrders} stores={stores} isHq={isHq} batchSale={batchSale} products={products} />}
           {adminTab === "orders" && <OrdersPanel orders={scopedOrders} stores={stores} isHq={isHq} onUpdate={refreshData} />}
+          {adminTab === "members" && <MembersPanel />}
           {adminTab === "products" && <ProductsPanel products={products} inventory={inventory} stores={stores} isHq={isHq} onUpdate={refreshData} />}
           {adminTab === "settings" && isHq && <SettingsPanel batchSale={batchSale} stores={stores} products={products} onUpdate={refreshData} />}
           {adminTab === "settings" && !isHq && (

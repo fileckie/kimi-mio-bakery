@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, CheckSquare, Square, ArrowRight } from "lucide-react";
 import type { Order, StoreLocation, OrderStatus } from "../../types";
 import { api } from "../../lib/api";
 import { getStoreName } from "../../lib/utils";
+import { useUIStore } from "../../stores/uiStore";
 
 interface OrdersPanelProps {
   orders: Order[];
@@ -24,12 +25,29 @@ const statusStyles: Record<OrderStatus, string> = {
 export function OrdersPanel({ orders, stores, isHq, onUpdate }: OrdersPanelProps) {
   const [filter, setFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
 
   const filtered = orders.filter((o) => {
     const matchesSearch = !filter || o.id.includes(filter) || (o.customerName || "").includes(filter) || (o.pickupCode || "").includes(filter);
     const matchesStatus = statusFilter === "all" || o.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const toggleSelect = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelected(next);
+  };
+
+  const toggleAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((o) => o.id)));
+    }
+  };
 
   const updateStatus = async (id: string, status: OrderStatus) => {
     try {
@@ -38,6 +56,20 @@ export function OrdersPanel({ orders, stores, isHq, onUpdate }: OrdersPanelProps
     } catch (e) {
       alert(e instanceof Error ? e.message : "更新失败");
     }
+  };
+
+  const batchUpdateStatus = async (status: OrderStatus) => {
+    if (selected.size === 0) return;
+    setBatchLoading(true);
+    try {
+      await api.batchUpdateOrderStatus(Array.from(selected), status);
+      useUIStore.getState().addToast({ type: "success", message: `已批量更新 ${selected.size} 个订单为「${status}」` });
+      setSelected(new Set());
+      onUpdate();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "批量更新失败");
+    }
+    setBatchLoading(false);
   };
 
   return (
@@ -59,10 +91,39 @@ export function OrdersPanel({ orders, stores, isHq, onUpdate }: OrdersPanelProps
         </div>
       </div>
 
+      {/* Batch action bar */}
+      {selected.size > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-kiln/5 border border-kiln/10 p-3 animate-fade-in">
+          <span className="text-sm font-semibold text-kiln">已选 {selected.size} 单</span>
+          <div className="flex flex-wrap gap-2">
+            {statusOptions.map((s) => (
+              <button
+                key={s}
+                onClick={() => batchUpdateStatus(s)}
+                disabled={batchLoading}
+                className={`press-feedback inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${statusStyles[s]} hover:opacity-80`}
+              >
+                <ArrowRight className="h-3 w-3" />
+                改为{s}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setSelected(new Set())} className="ml-auto text-xs text-muted hover:text-kiln">
+            取消选择
+          </button>
+        </div>
+      )}
+
       <div className="mt-5 overflow-x-auto">
         <table className="min-w-[1000px] w-full text-left text-sm">
           <thead className="text-muted">
             <tr>
+              <th className="py-3 pr-2">
+                <button onClick={toggleAll} className="inline-flex items-center gap-1 text-xs font-medium hover:text-kiln transition">
+                  {selected.size === filtered.length && filtered.length > 0 ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                  全选
+                </button>
+              </th>
               <th className="py-3 font-medium">订单</th>
               <th className="py-3 font-medium">时间</th>
               <th className="py-3 font-medium">顾客</th>
@@ -75,7 +136,12 @@ export function OrdersPanel({ orders, stores, isHq, onUpdate }: OrdersPanelProps
           </thead>
           <tbody>
             {filtered.map((order) => (
-              <tr key={order.id} className="border-t border-border">
+              <tr key={order.id} className={`border-t border-border transition ${selected.has(order.id) ? "bg-kiln/5" : "hover:bg-ash/50"}`}>
+                <td className="py-4 pr-2">
+                  <button onClick={() => toggleSelect(order.id)} className="text-muted hover:text-kiln transition">
+                    {selected.has(order.id) ? <CheckSquare className="h-4 w-4 text-kiln" /> : <Square className="h-4 w-4" />}
+                  </button>
+                </td>
                 <td className="py-4 font-semibold text-kiln">{order.id}<div className="text-xs text-muted font-normal">取货码 {order.pickupCode}</div></td>
                 <td className="py-4 text-muted">{order.createdAt}</td>
                 <td className="py-4">

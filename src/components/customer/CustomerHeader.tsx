@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { Menu, X, Flame, ShoppingBag } from "lucide-react";
+import { Menu, X, Flame, ShoppingBag, User } from "lucide-react";
 import { useUIStore } from "../../stores/uiStore";
 import { useCartStore } from "../../stores/cartStore";
 import { useAppStore } from "../../stores/appStore";
+import { useAuthStore } from "../../stores/authStore";
 
 const navItems = [
   { label: "今日出炉", href: "#today" },
@@ -11,10 +12,11 @@ const navItems = [
   { label: "门店", href: "#stores" },
 ];
 
-export function CustomerHeader() {
+export function CustomerHeader({ onOpenMyOrders }: { onOpenMyOrders?: () => void }) {
   const { mobileMenuOpen, setMobileMenuOpen, scrolled, setScrolled } = useUIStore();
   const navigate = useAppStore((s) => s.setRoute);
   const cartCount = Object.values(useCartStore((s) => s.items)).reduce((a, b) => a + b, 0);
+  const customer = useAuthStore((s) => s.customer);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -50,6 +52,15 @@ export function CustomerHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {customer && onOpenMyOrders && (
+            <button
+              onClick={onOpenMyOrders}
+              className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-4 py-2 text-xs font-semibold text-kiln transition hover:bg-surface"
+            >
+              <User className="h-3.5 w-3.5" />
+              我的订单
+            </button>
+          )}
           {cartCount > 0 && (
             <a href="#menu" className="flex items-center gap-1.5 rounded-full bg-kiln px-3 py-1.5 text-xs font-bold text-ash transition hover:bg-kiln-light">
               <ShoppingBag className="h-3.5 w-3.5" />
@@ -86,6 +97,15 @@ export function CustomerHeader() {
                 {item.label}
               </a>
             ))}
+            {customer && onOpenMyOrders && (
+              <button
+                type="button"
+                onClick={() => { setMobileMenuOpen(false); onOpenMyOrders(); }}
+                className="py-3 text-left text-sm font-medium text-kiln border-b border-border/50"
+              >
+                我的订单
+              </button>
+            )}
             <button
               type="button"
               onClick={() => { setMobileMenuOpen(false); navigate("/admin"); }}

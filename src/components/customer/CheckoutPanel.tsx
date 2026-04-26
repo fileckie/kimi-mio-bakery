@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BadgeCheck, Store, Bike, Truck, QrCode, Smartphone, CreditCard, ShoppingBag } from "lucide-react";
+import { BadgeCheck, Store, Bike, Truck, QrCode, Smartphone, CreditCard, ShoppingBag, User } from "lucide-react";
 import type { BatchSale, StoreLocation, StoreId, Order, PaymentMethod, Product } from "../../types";
 import { useCartStore } from "../../stores/cartStore";
 import { useAuthStore } from "../../stores/authStore";
@@ -27,12 +27,10 @@ const paymentMethods: { method: PaymentMethod; icon: typeof QrCode }[] = [
 
 export function CheckoutPanel({ batchSale, stores, products, onOrderSuccess }: CheckoutPanelProps) {
   const cart = useCartStore();
-  const { customer, login, register, logout, error: authError, clearError } = useAuthStore();
+  const { customer, authenticate, logout, error: authError, clearError } = useAuthStore();
   const createOrder = useAppStore((s) => s.createOrder);
-  const [memberMode, setMemberMode] = useState<"login" | "register">("register");
-  const [memberName, setMemberName] = useState("");
-  const [memberPhone, setMemberPhone] = useState("");
-  const [memberPassword, setMemberPassword] = useState("");
+  const [memberName, setMemberName] = useState(customer?.name || "");
+  const [memberPhone, setMemberPhone] = useState(customer?.phone || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cartItems = Object.entries(cart.items)
@@ -113,34 +111,38 @@ export function CheckoutPanel({ batchSale, stores, products, onOrderSuccess }: C
         )}
       </div>
 
-      {/* Member */}
+      {/* Member — simplified: name + phone only */}
       {customer ? (
         <div className="mt-5 rounded-xl bg-green-50 p-4 text-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-green-900">{customer.name}</p>
-              <p className="text-green-800/60">{customer.phone}</p>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-green-700" />
+              <div>
+                <p className="font-semibold text-green-900">{customer.name}</p>
+                <p className="text-green-800/60">{customer.phone}</p>
+              </div>
             </div>
             <button onClick={logout} className="text-xs font-semibold text-green-800/50 hover:text-green-800">切换</button>
           </div>
         </div>
       ) : (
         <div className="mt-5 rounded-xl border border-border bg-ash p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-kiln" />
             <p className="font-semibold text-kiln">窑烤会员</p>
-            <div className="flex rounded-full bg-white p-0.5 text-xs font-semibold shadow-soft">
-              <button onClick={() => { setMemberMode("register"); clearError(); }} className={`rounded-full px-3 py-1 transition ${memberMode === "register" ? "bg-kiln text-ash" : "text-muted"}`}>注册</button>
-              <button onClick={() => { setMemberMode("login"); clearError(); }} className={`rounded-full px-3 py-1 transition ${memberMode === "login" ? "bg-kiln text-ash" : "text-muted"}`}>登录</button>
-            </div>
           </div>
+          <p className="mt-1 text-xs text-muted">输入姓名和手机号即可预订，新用户自动注册</p>
           <div className="mt-3 grid gap-2.5">
-            {memberMode === "register" && <input className="input-field" value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="姓名" />}
+            <input className="input-field" value={memberName} onChange={(e) => setMemberName(e.target.value)} placeholder="姓名" />
             <input className="input-field" value={memberPhone} onChange={(e) => setMemberPhone(e.target.value)} placeholder="手机号" />
-            <input className="input-field" type="password" value={memberPassword} onChange={(e) => setMemberPassword(e.target.value)} placeholder="密码" />
           </div>
           {authError && <p className="mt-2 text-sm text-ember">{authError}</p>}
-          <button onClick={async () => { memberMode === "register" ? await register(memberName, memberPhone, memberPassword) : await login(memberPhone, memberPassword); }} className="mt-3 w-full rounded-full bg-kiln py-2.5 text-sm font-semibold text-ash hover:bg-kiln-light transition">
-            {memberMode === "register" ? "注册并继续" : "登录并继续"}
+          <button
+            onClick={() => authenticate(memberName, memberPhone)}
+            disabled={!memberName.trim() || !memberPhone.trim()}
+            className="mt-3 w-full rounded-full bg-kiln py-2.5 text-sm font-semibold text-ash hover:bg-kiln-light transition disabled:opacity-40"
+          >
+            确认并继续
           </button>
         </div>
       )}
@@ -160,7 +162,7 @@ export function CheckoutPanel({ batchSale, stores, products, onOrderSuccess }: C
           const Icon = opt.icon;
           const active = cart.deliveryMethod === opt.method;
           return (
-            <button key={opt.method} onClick={() => cart.setDeliveryMethod(opt.method)} className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${active ? "border-kiln bg-kiln text-ash" : "border-border bg-white hover:bg-ash"}`}>
+            <button key={opt.method} onClick={() => cart.setDeliveryMethod(opt.method)} className={`press-feedback flex items-center gap-3 rounded-xl border p-3 text-left transition ${active ? "border-kiln bg-kiln text-ash" : "border-border bg-white hover:bg-ash"}`}>
               <Icon className="h-5 w-5" />
               <span>
                 <span className="block text-sm font-semibold">{opt.method}</span>
@@ -191,12 +193,18 @@ export function CheckoutPanel({ batchSale, stores, products, onOrderSuccess }: C
           const Icon = opt.icon;
           const active = cart.paymentMethod === opt.method;
           return (
-            <button key={opt.method} onClick={() => cart.setPaymentMethod(opt.method)} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold transition ${active ? "bg-ember text-white" : "bg-ash text-kiln/70 hover:bg-ash-deep"}`}>
+            <button key={opt.method} onClick={() => cart.setPaymentMethod(opt.method)} className={`press-feedback flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold transition ${active ? "bg-ember text-white" : "bg-ash text-kiln/70 hover:bg-ash-deep"}`}>
               <Icon className="h-4 w-4" />{opt.method}
             </button>
           );
         })}
       </div>
+      {cart.paymentMethod === "微信转账" && (
+        <div className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+          <p className="font-semibold">付款说明</p>
+          <p className="mt-1">下单后请添加主理人微信 <span className="font-mono font-bold">{batchSale.paymentWechatId}</span>，发送订购单截图并完成转账。</p>
+        </div>
+      )}
 
       {/* Total */}
       <div className="mt-6 space-y-2 border-t border-border pt-5 text-sm">
