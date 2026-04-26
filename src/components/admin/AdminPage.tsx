@@ -6,6 +6,7 @@ import { AdminHeader } from "./AdminHeader";
 import { AdminDashboard } from "./AdminDashboard";
 import { OrdersPanel } from "./OrdersPanel";
 import { ProductsPanel } from "./ProductsPanel";
+import { InventoryPanel } from "./InventoryPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { MembersPanel } from "./MembersPanel";
 
@@ -28,6 +29,7 @@ export function AdminPage() {
     { id: "orders" as const, label: "订单" },
     { id: "members" as const, label: "会员" },
     { id: "products" as const, label: "商品" },
+    { id: "inventory" as const, label: "库存" },
     { id: "settings" as const, label: "设置" },
   ];
 
@@ -71,6 +73,7 @@ export function AdminPage() {
           {adminTab === "orders" && <OrdersPanel orders={scopedOrders} stores={stores} isHq={isHq} onUpdate={refreshData} />}
           {adminTab === "members" && <MembersPanel />}
           {adminTab === "products" && <ProductsPanel products={products} inventory={inventory} stores={stores} isHq={isHq} onUpdate={refreshData} />}
+          {adminTab === "inventory" && <InventoryPanel products={products} inventory={inventory} stores={stores} isHq={isHq} onUpdate={refreshData} />}
           {adminTab === "settings" && isHq && <SettingsPanel batchSale={batchSale} stores={stores} products={products} onUpdate={refreshData} />}
           {adminTab === "settings" && !isHq && (
             <div className="admin-panel text-center py-12">

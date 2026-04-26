@@ -10,7 +10,7 @@ export type OrderStatus = "待确认" | "待生产" | "待自提" | "待发货" 
 export type Route = "/" | "/admin" | "/admin/pos";
 export type RoleId = "hq" | "store-a" | "store-b" | "store-c" | "store-d";
 export type StoreId = "store-a" | "store-b" | "store-c" | "store-d";
-export type AdminTab = "overview" | "orders" | "members" | "products" | "settings";
+export type AdminTab = "overview" | "orders" | "members" | "products" | "inventory" | "settings";
 
 export interface Product {
   id: string;
@@ -48,6 +48,7 @@ export interface OvenBatch {
 export interface BatchSale {
   isOpen: boolean;
   deadline: string;
+  defaultDeadline: string;      // 默认截单时间，如 "21:30"
   ovenBatch: string;
   ovenBatches: OvenBatch[];
   featuredProductIds: string[];

@@ -36,6 +36,7 @@ interface AppState {
 const emptyBatchSale: BatchSale = {
   isOpen: false,
   deadline: "",
+  defaultDeadline: "21:30",
   ovenBatch: "",
   ovenBatches: [],
   featuredProductIds: [],

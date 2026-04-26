@@ -52,7 +52,16 @@ export function SettingsPanel({ batchSale, stores, products, onUpdate }: Setting
             </span>
             <input type="checkbox" checked={batchSale.isOpen} onChange={(e) => updateBatch({ isOpen: e.target.checked })} className="h-5 w-5 accent-ember" />
           </label>
-          <input className="input-field" value={batchSale.deadline} onChange={(e) => updateBatch({ deadline: e.target.value })} placeholder="截止时间" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-sm">
+              <span className="mb-2 block text-muted">默认截单时间（如 21:30）</span>
+              <input className="input-field" type="time" value={batchSale.defaultDeadline} onChange={(e) => updateBatch({ defaultDeadline: e.target.value })} />
+            </label>
+            <label className="text-sm">
+              <span className="mb-2 block text-muted">本轮截止时间文案</span>
+              <input className="input-field" value={batchSale.deadline} onChange={(e) => updateBatch({ deadline: e.target.value })} placeholder="如今晚 21:30" />
+            </label>
+          </div>
           <input className="input-field" value={batchSale.ovenBatch} onChange={(e) => updateBatch({ ovenBatch: e.target.value })} placeholder="出炉批次描述" />
 
           <div className="rounded-xl bg-ash p-4">

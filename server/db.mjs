@@ -39,6 +39,7 @@ export function initDb() {
       id TEXT PRIMARY KEY,
       isOpen INTEGER NOT NULL,
       deadline TEXT NOT NULL,
+      defaultDeadline TEXT NOT NULL DEFAULT '21:30',
       ovenBatch TEXT NOT NULL,
       ovenBatches TEXT NOT NULL DEFAULT '[]',
       featuredProductIds TEXT NOT NULL,
@@ -124,6 +125,7 @@ export function initDb() {
   ensureColumn("batch_sales", "paymentWechatId", "TEXT NOT NULL DEFAULT 'mio220827'");
   ensureColumn("batch_sales", "paymentQrUrl", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("batch_sales", "paymentInstruction", "TEXT NOT NULL DEFAULT '下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。'");
+  ensureColumn("batch_sales", "defaultDeadline", "TEXT NOT NULL DEFAULT '21:30'");
   ensureColumn("orders", "customerId", "TEXT");
   ensureColumn("orders", "customerName", "TEXT");
   ensureColumn("orders", "customerPhone", "TEXT");
@@ -429,12 +431,13 @@ export function updateBatchSale(patch) {
     pickupStoreIds: patch.pickupStoreIds ? JSON.stringify(patch.pickupStoreIds) : current.pickupStoreIds,
   };
   db.prepare(`
-    UPDATE batch_sales SET isOpen = ?, deadline = ?, ovenBatch = ?, ovenBatches = ?, featuredProductIds = ?,
+    UPDATE batch_sales SET isOpen = ?, deadline = ?, defaultDeadline = ?, ovenBatch = ?, ovenBatches = ?, featuredProductIds = ?,
     pickupStoreIds = ?, freeShippingThreshold = ?, baseShippingFee = ?, note = ?,
     paymentWechatId = ?, paymentQrUrl = ?, paymentInstruction = ? WHERE id = 'current'
   `).run(
     next.isOpen,
     next.deadline,
+    next.defaultDeadline ?? current.defaultDeadline ?? "21:30",
     next.ovenBatch,
     next.ovenBatches,
     next.featuredProductIds,
@@ -625,6 +628,7 @@ function mapBatchSale(row) {
     id: row.id,
     isOpen: Boolean(row.isOpen),
     deadline: row.deadline,
+    defaultDeadline: row.defaultDeadline || "21:30",
     ovenBatch: row.ovenBatch,
     ovenBatches: parseJson(row.ovenBatches, defaultOvenBatches()),
     featuredProductIds: JSON.parse(row.featuredProductIds),

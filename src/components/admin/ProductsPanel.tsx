@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Upload, Camera, ToggleLeft, ToggleRight } from "lucide-react";
-import type { Product, InventoryMap, StoreLocation, Category, StoreId } from "../../types";
+import type { Product, InventoryMap, StoreLocation, Category } from "../../types";
 import { api } from "../../lib/api";
 import { readImageFile } from "../../lib/utils";
 
@@ -41,11 +41,6 @@ export function ProductsPanel({ products, inventory, stores, isHq, onUpdate }: P
   const uploadImage = async (productId: string, file?: File) => {
     if (!file) return;
     try { const url = await readImageFile(file); await updateProduct(productId, { imageUrl: url }); } catch { alert("图片上传失败"); }
-  };
-
-  const updateStock = async (productId: string, storeId: StoreId, value: number) => {
-    if (!isHq) return;
-    try { await api.updateInventory(productId, storeId, Math.max(0, value)); onUpdate(); } catch { alert("库存保存失败"); }
   };
 
   return (
@@ -133,50 +128,6 @@ export function ProductsPanel({ products, inventory, stores, isHq, onUpdate }: P
         </div>
       </div>
 
-      {/* Inventory */}
-      <div className="admin-panel">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-ember">库存</p>
-            <h2 className="mt-1 font-brush text-3xl text-kiln">库存分配</h2>
-          </div>
-          {!isHq && <span className="rounded-full bg-ash px-4 py-2 text-sm text-muted">门店只读</span>}
-        </div>
-        <p className="mt-2 font-hand text-sm text-muted">总部把产量分配到各门店</p>
-        <div className="mt-5 overflow-x-auto">
-          <table className="min-w-[800px] w-full text-left text-sm">
-            <thead className="text-muted">
-              <tr>
-                <th className="py-3 font-medium">商品</th>
-                <th className="py-3 font-medium">中央库存</th>
-                {stores.map((s) => <th key={s.id} className="py-3 font-medium">{s.name}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {products.slice(0, isHq ? products.length : 8).map((p) => (
-                <tr key={p.id} className="border-t border-border">
-                  <td className="py-3 font-medium text-kiln">{p.name}</td>
-                  <td className="py-3 text-muted">{inventory[p.id]?.centralStock ?? 0}</td>
-                  {stores.map((s) => {
-                    const alloc = inventory[p.id]?.stores[s.id] ?? 0;
-                    const sold = inventory[p.id]?.sold[s.id] ?? 0;
-                    const remaining = Math.max(0, alloc - sold);
-                    return (
-                      <td key={s.id} className="py-3">
-                        {isHq ? (
-                          <input className="input-field w-20 py-1.5 text-sm" type="number" value={alloc} onChange={(e) => updateStock(p.id, s.id, Number(e.target.value))} />
-                        ) : (
-                          <span className={remaining <= 2 ? "font-semibold text-ember" : "text-kiln"}>{remaining} 剩余</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }

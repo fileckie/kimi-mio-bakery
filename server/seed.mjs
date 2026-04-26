@@ -29,6 +29,7 @@ export const seedBatchSale = {
   id: "current",
   isOpen: 1,
   deadline: "今晚 21:30",
+  defaultDeadline: "21:30",
   ovenBatch: "明日 10:30 / 16:30 出炉",
   featuredProductIds: ["lychee-rose", "salt-roll", "pistachio-toast"],
   pickupStoreIds: ["store-a", "store-b"],
