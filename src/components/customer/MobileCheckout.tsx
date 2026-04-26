@@ -1,3 +1,4 @@
+import { useRef, useCallback, useState } from "react";
 import { ShoppingBag, X } from "lucide-react";
 import { useUIStore } from "../../stores/uiStore";
 import { useCartStore } from "../../stores/cartStore";
@@ -12,12 +13,55 @@ export function MobileCheckout({ total, children }: MobileCheckoutProps) {
   const { mobileCheckoutOpen, setMobileCheckoutOpen } = useUIStore();
   const cartCount = Object.values(useCartStore((s) => s.items)).reduce((a, b) => a + b, 0);
 
+  // Swipe-to-dismiss state
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const startY = useRef(0);
+  const startTime = useRef(0);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+    startTime.current = Date.now();
+    setIsDragging(true);
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const delta = e.touches[0].clientY - startY.current;
+    // Only allow dragging down
+    if (delta > 0) {
+      setDragY(delta);
+    }
+  }, [isDragging]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+    const delta = dragY;
+    const elapsed = Date.now() - startTime.current;
+    const velocity = delta / (elapsed || 1);
+
+    // Close if dragged more than 100px or with high velocity
+    if (delta > 100 || (delta > 40 && velocity > 0.5)) {
+      setDragY(0);
+      setMobileCheckoutOpen(false);
+    } else {
+      // Snap back
+      setDragY(0);
+    }
+  }, [dragY, setMobileCheckoutOpen]);
+
+  const sheetStyle = isDragging
+    ? { transform: `translateY(${dragY}px)`, transition: "none" }
+    : { transform: "translateY(0)", transition: "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)" };
+
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 p-3 shadow-[0_-8px_32px_rgba(30,23,18,.10)] backdrop-blur-xl lg:hidden">
+      {/* Bottom sticky bar */}
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 p-3 shadow-[0_-8px_32px_rgba(30,23,18,.10)] backdrop-blur-xl lg:hidden animate-slide-up">
         <button
           onClick={() => setMobileCheckoutOpen(true)}
-          className="flex w-full items-center justify-between rounded-full bg-kiln px-6 py-3.5 text-white shadow-card"
+          className="press-feedback flex w-full items-center justify-between rounded-full bg-kiln px-6 py-3.5 text-white shadow-card"
         >
           <span className="flex items-center gap-2.5 text-sm font-medium">
             <ShoppingBag className="h-5 w-5" />
@@ -27,12 +71,33 @@ export function MobileCheckout({ total, children }: MobileCheckoutProps) {
         </button>
       </div>
 
+      {/* Checkout overlay + sheet */}
       {mobileCheckoutOpen && (
-        <div className="fixed inset-0 z-[60] bg-kiln/30 p-3 backdrop-blur-sm lg:hidden animate-fade-in">
-          <div className="absolute inset-x-0 bottom-0 max-h-[88svh] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-elevated animate-slide-up">
+        <div className="fixed inset-0 z-[60] lg:hidden animate-fade-in">
+          {/* Backdrop — tap to close */}
+          <div
+            className="absolute inset-0 bg-kiln/30 backdrop-blur-sm"
+            onClick={() => setMobileCheckoutOpen(false)}
+          />
+
+          {/* Sheet with swipe-to-dismiss */}
+          <div
+            ref={sheetRef}
+            className="absolute inset-x-0 bottom-0 max-h-[88svh] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-elevated"
+            style={sheetStyle}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Drag handle */}
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
+
             <div className="mb-4 flex items-center justify-between">
               <p className="font-brush text-xl text-kiln">确认预订</p>
-              <button onClick={() => setMobileCheckoutOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-full bg-surface transition hover:bg-kiln hover:text-white">
+              <button
+                onClick={() => setMobileCheckoutOpen(false)}
+                className="press-feedback flex h-9 w-9 items-center justify-center rounded-full bg-surface transition hover:bg-kiln hover:text-white"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>

@@ -1,3 +1,4 @@
+import { useRef, useCallback } from "react";
 import { Plus, Minus, TrendingUp } from "lucide-react";
 import type { Product } from "../../types";
 import { ProductVisual } from "./ProductVisual";
@@ -15,9 +16,27 @@ interface ProductCardProps {
 export function ProductCard({ product, available, qty, canOrder, onAdd, onRemove, hotRank }: ProductCardProps) {
   const isLowStock = available > 0 && available <= 3;
   const isSoldOut = available === 0;
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Light ripple on card tap
+  const handleCardTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    card.style.setProperty("--ripple-x", `${x}%`);
+    card.style.setProperty("--ripple-y", `${y}%`);
+  }, []);
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-white transition hover:shadow-elevated hover:-translate-y-0.5">
+    <article
+      ref={cardRef}
+      className="group relative overflow-hidden rounded-2xl border border-border bg-white transition hover:shadow-elevated hover:-translate-y-0.5 ripple-container"
+      onTouchStart={handleCardTap}
+    >
       <ProductVisual product={product} />
 
       <div className="p-4">
@@ -60,7 +79,12 @@ export function ProductCard({ product, available, qty, canOrder, onAdd, onRemove
 
           {qty > 0 ? (
             <div className="flex items-center gap-1.5 rounded-full bg-ash p-1">
-              <button type="button" onClick={onRemove} className="counter-button h-8 w-8" aria-label="减少">
+              <button
+                type="button"
+                onClick={onRemove}
+                className="counter-button press-feedback h-8 w-8"
+                aria-label="减少"
+              >
                 <Minus className="h-3.5 w-3.5" />
               </button>
               <span className="w-6 text-center text-sm font-bold text-kiln">{qty}</span>
@@ -68,7 +92,7 @@ export function ProductCard({ product, available, qty, canOrder, onAdd, onRemove
                 type="button"
                 onClick={onAdd}
                 disabled={!canOrder || qty >= available}
-                className="counter-button h-8 w-8 bg-ember text-white hover:bg-ember-dim disabled:opacity-30"
+                className="counter-button press-feedback h-8 w-8 bg-ember text-white hover:bg-ember-dim disabled:opacity-30"
                 aria-label="增加"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -79,7 +103,7 @@ export function ProductCard({ product, available, qty, canOrder, onAdd, onRemove
               type="button"
               onClick={onAdd}
               disabled={!canOrder || isSoldOut}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-kiln text-ash transition hover:bg-kiln-light disabled:opacity-20 disabled:cursor-not-allowed shadow-soft"
+              className="press-feedback inline-flex h-9 w-9 items-center justify-center rounded-full bg-kiln text-ash transition hover:bg-kiln-light disabled:opacity-20 disabled:cursor-not-allowed shadow-soft"
             >
               <Plus className="h-4 w-4" />
             </button>
