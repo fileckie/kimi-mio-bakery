@@ -51,6 +51,15 @@ export async function handleApi(req, res, url) {
     sendJson(res, 200, loginCustomer(await readJson(req)));
     return;
   }
+  if (req.method === "POST" && url.pathname === "/api/admin/login") {
+    const { username, password } = await readJson(req);
+    if (username === "1" && password === "1") {
+      sendJson(res, 200, { token: "mio-admin-" + Date.now(), message: "登录成功" });
+    } else {
+      sendJson(res, 401, { error: "账号或密码错误" });
+    }
+    return;
+  }
 
   if (req.method === "POST" && url.pathname === "/api/customers/authenticate") {
     sendJson(res, 200, authenticateCustomer(await readJson(req)));

@@ -123,6 +123,14 @@ export default {
         "steam": "steam 3s ease-out infinite",
         "wiggle": "wiggle 2s ease-in-out infinite",
         "stamp": "stamp 0.4s cubic-bezier(0.22,1,0.36,1) both",
+        "float": "float 3s ease-in-out infinite",
+        "glow-pulse": "glowPulse 2s ease-in-out infinite",
+        "spark": "spark 1.5s ease-out infinite",
+        "breath": "breath 4s ease-in-out infinite",
+        "sway": "sway 3s ease-in-out infinite",
+        "typewriter": "typewriter 1.2s steps(12) forwards",
+        "ink-spread": "inkSpread 0.8s cubic-bezier(0.22,1,0.36,1) both",
+        "scale-in": "scaleIn 0.3s cubic-bezier(0.22,1,0.36,1) both",
       },
       keyframes: {
         fadeIn: {
@@ -162,6 +170,30 @@ export default {
         stamp: {
           from: { opacity: "0", transform: "scale(1.5) rotate(-10deg)" },
           to: { opacity: "1", transform: "scale(1) rotate(-6deg)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        glowPulse: {
+          "0%, 100%": { boxShadow: "0 0 12px rgba(232,74,46,0.15)" },
+          "50%": { boxShadow: "0 0 24px rgba(232,74,46,0.35)" },
+        },
+        spark: {
+          "0%": { opacity: "1", transform: "translate(0, 0) scale(1)" },
+          "100%": { opacity: "0", transform: "translate(var(--spark-x, 20px), var(--spark-y, -30px)) scale(0)" },
+        },
+        breath: {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.03)", opacity: "0.9" },
+        },
+        sway: {
+          "0%, 100%": { transform: "rotate(-1deg)" },
+          "50%": { transform: "rotate(1.5deg)" },
+        },
+        scaleIn: {
+          from: { opacity: "0", transform: "scale(0.92)" },
+          to: { opacity: "1", transform: "scale(1)" },
         },
       },
     },

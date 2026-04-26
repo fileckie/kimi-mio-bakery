@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, Store, Truck, Wallet, PackageCheck, TrendingUp, Flame, Clock, Lock, Printer, Unlock } from "lucide-react";
+import { ClipboardList, Store, Truck, Wallet, PackageCheck, TrendingUp, Flame, Clock, Lock, Printer, Unlock, Calendar } from "lucide-react";
 import type { Order, StoreLocation, BatchSale, Product, ProductionSheet } from "../../types";
 import { useAppStore } from "../../stores/appStore";
 import { ProductionSheetPrint } from "./ProductionSheetPrint";
@@ -19,6 +19,13 @@ export function AdminDashboard({ orders, stores, isHq, batchSale, products }: Da
   const { closeBatch, productionSheets } = useAppStore();
   const [closing, setClosing] = useState(false);
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
+  const [sheetDateFrom, setSheetDateFrom] = useState("");
+  const [sheetDateTo, setSheetDateTo] = useState("");
+
+  const filteredSheets = productionSheets.filter((s) => {
+    const sheetDate = s.createdAt ? new Date(s.createdAt).toISOString().slice(0, 10) : "";
+    return (!sheetDateFrom || sheetDate >= sheetDateFrom) && (!sheetDateTo || sheetDate <= sheetDateTo);
+  });
 
   const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
   const pickupCount = orders.filter((o) => o.deliveryMethod === "门店自提").length;
@@ -124,12 +131,20 @@ export function AdminDashboard({ orders, stores, isHq, batchSale, products }: Da
       {/* Production sheets history */}
       {productionSheets.length > 0 && (
         <div className="admin-panel">
-          <h2 className="text-xl font-semibold text-kiln flex items-center gap-2">
-            <Printer className="h-5 w-5 text-ember" />
-            窑烤单记录
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 className="text-xl font-semibold text-kiln flex items-center gap-2">
+              <Printer className="h-5 w-5 text-ember" />
+              窑烤单记录
+            </h2>
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4 text-muted" />
+              <input type="date" className="input-field py-2 text-sm w-36" value={sheetDateFrom} onChange={(e) => setSheetDateFrom(e.target.value)} />
+              <span className="text-muted text-xs">-</span>
+              <input type="date" className="input-field py-2 text-sm w-36" value={sheetDateTo} onChange={(e) => setSheetDateTo(e.target.value)} />
+            </div>
+          </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {productionSheets.map((sheet) => (
+            {filteredSheets.map((sheet) => (
               <button
                 key={sheet.id}
                 onClick={() => setActiveSheetId(sheet.id)}

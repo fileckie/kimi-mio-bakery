@@ -1,4 +1,4 @@
-import { MapPin, Clock } from "lucide-react";
+import { MapPin, Clock, Flame } from "lucide-react";
 import type { StoreLocation } from "../../types";
 
 interface StoreInfoProps {
@@ -16,12 +16,26 @@ export function StoreInfo({ stores }: StoreInfoProps) {
             面包从同一座窑中出炉，按订单分装到各门店。你选择最方便的点位，我们在约定时间把面包送到。
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {stores.map((store) => (
-            <div key={store.id} className="group rounded-2xl border border-border bg-ash p-5 transition hover:shadow-card hover:-translate-y-0.5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {stores.map((store, i) => (
+            <div
+              key={store.id}
+              className={`group rounded-2xl border p-5 transition hover:shadow-card hover:-translate-y-0.5 hover-lift animate-rise ${
+                store.role === "central"
+                  ? "border-ember/30 bg-white ring-1 ring-ember/10"
+                  : "border-border bg-ash"
+              }`}
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
               <div className="flex items-center gap-2 text-xs font-semibold text-smoke uppercase tracking-wider">
                 <MapPin className="h-3.5 w-3.5" />
-                {store.role === "central" ? "中央窑房" : "自提点"}
+                {store.role === "central" ? "主门店" : "自提点"}
+                {store.role === "central" && (
+                  <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-ember/10 px-2 py-0.5 text-[10px] text-ember">
+                    <Flame className="h-3 w-3 animate-flicker" />
+                    窑烤主场
+                  </span>
+                )}
               </div>
               <p className="mt-3 text-lg font-semibold text-kiln">{store.name}</p>
               <p className="mt-1 text-sm text-muted">{store.address}</p>

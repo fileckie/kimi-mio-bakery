@@ -407,6 +407,114 @@ button {
   animation: shimmer 1.5s linear infinite;
 }
 
+/* ===== 精致悬停效果 ===== */
+.hover-lift {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(30, 23, 18, 0.12);
+}
+
+/* ===== 光晕按钮 ===== */
+.glow-button {
+  position: relative;
+  overflow: hidden;
+}
+.glow-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: radial-gradient(circle at center, rgba(232,74,46,0.25), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.glow-button:hover::before {
+  opacity: 1;
+}
+
+/* ===== 火花粒子容器 ===== */
+.spark-container {
+  position: relative;
+}
+.spark-container::before,
+.spark-container::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #E84A2E;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.spark-container::before {
+  animation: spark 1.8s ease-out infinite;
+  --spark-x: 18px;
+  --spark-y: -28px;
+}
+.spark-container::after {
+  animation: spark 2.2s ease-out infinite 0.6s;
+  --spark-x: -14px;
+  --spark-y: -22px;
+}
+
+/* ===== 墨迹扩散 ===== */
+@keyframes inkSpread {
+  from { transform: scale(0); opacity: 0.6; }
+  to   { transform: scale(2.5); opacity: 0; }
+}
+.ink-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.ink-ripple .ink-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(30, 23, 18, 0.08);
+  transform: scale(0);
+  animation: inkSpread 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* ===== 复古边框效果 ===== */
+.vintage-border {
+  position: relative;
+  border: 1.5px solid #E2D5C5;
+}
+.vintage-border::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(30, 23, 18, 0.06);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ===== 温暖光晕背景 ===== */
+.warm-glow {
+  position: relative;
+}
+.warm-glow::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(232,74,46,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ===== 面包纹理背景 ===== */
+.bread-texture {
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(212,168,83,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(232,74,46,0.03) 0%, transparent 50%);
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

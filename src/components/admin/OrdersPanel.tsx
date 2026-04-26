@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, CheckSquare, Square, ArrowRight } from "lucide-react";
+import { Search, CheckSquare, Square, ArrowRight, Download, Calendar } from "lucide-react";
 import type { Order, StoreLocation, OrderStatus } from "../../types";
 import { api } from "../../lib/api";
 import { getStoreName } from "../../lib/utils";
@@ -25,14 +25,42 @@ const statusStyles: Record<OrderStatus, string> = {
 export function OrdersPanel({ orders, stores, isHq, onUpdate }: OrdersPanelProps) {
   const [filter, setFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [batchLoading, setBatchLoading] = useState(false);
 
   const filtered = orders.filter((o) => {
     const matchesSearch = !filter || o.id.includes(filter) || (o.customerName || "").includes(filter) || (o.pickupCode || "").includes(filter);
     const matchesStatus = statusFilter === "all" || o.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const orderDate = o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : "";
+    const matchesDate = (!dateFrom || orderDate >= dateFrom) && (!dateTo || orderDate <= dateTo);
+    return matchesSearch && matchesStatus && matchesDate;
   });
+
+  const exportCsv = () => {
+    const rows = filtered.map((o) => ({
+      订单号: o.id,
+      时间: o.createdAt,
+      顾客: o.customerName || o.receiver || "未登记",
+      手机: o.customerPhone || o.phone || "-",
+      商品: o.items.map((i) => `${i.name}×${i.qty}`).join(" / "),
+      配送: o.deliveryMethod,
+      状态: o.status,
+      门店: stores.find((s) => s.id === o.pickupStoreId)?.name || o.pickupStoreId,
+      金额: o.total,
+    }));
+    if (rows.length === 0) return;
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => `"${String((r as Record<string, unknown>)[h]).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `窑烤订单_${dateFrom || "全部"}_${dateTo || "全部"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const toggleSelect = (id: string) => {
     const next = new Set(selected);
@@ -88,6 +116,19 @@ export function OrdersPanel({ orders, stores, isHq, onUpdate }: OrdersPanelProps
             <option value="all">全部状态</option>
             {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
+          <div className="flex items-center gap-1">
+            <Calendar className="h-4 w-4 text-muted" />
+            <input type="date" className="input-field py-2 text-sm w-36" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <span className="text-muted text-xs">-</span>
+            <input type="date" className="input-field py-2 text-sm w-36" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          </div>
+          <button
+            onClick={exportCsv}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-kiln hover:bg-ash transition shadow-soft"
+          >
+            <Download className="h-4 w-4" />
+            导出
+          </button>
         </div>
       </div>
 

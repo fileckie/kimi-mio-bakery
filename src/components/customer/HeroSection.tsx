@@ -47,10 +47,10 @@ export function HeroSection({ batchSale, featuredProducts, inventory }: HeroSect
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <a
               href="#menu"
-              className="inline-flex items-center gap-2 rounded-full bg-ember px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-ember-dim shadow-elevated"
+              className="glow-button inline-flex items-center gap-2 rounded-full bg-ember px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-ember-dim shadow-elevated animate-glow-pulse"
             >
               预订今日窑烤
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </a>
             {batchSale.isOpen && batchSale.deadline.includes(":") && (
               <Countdown targetTime={batchSale.deadline.split(" ").pop() || "21:30"} />
@@ -67,7 +67,7 @@ export function HeroSection({ batchSale, featuredProducts, inventory }: HeroSect
               className="group animate-rise stagger-1"
               style={{ animationDelay: `${(i + 1) * 100}ms` }}
             >
-              <div className="rounded-2xl border border-border bg-white p-5 transition hover:shadow-elevated hover:-translate-y-1">
+              <div className="rounded-2xl border border-border bg-white p-5 transition hover:shadow-elevated hover:-translate-y-1 hover-lift">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold text-ember">本轮窑烤</p>

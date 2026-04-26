@@ -20,19 +20,20 @@ export function PickupSheetPrint({ orders, stores }: Props) {
       <html><head><title>自提单-${store.name}</title>
       <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=Long+Cang&display=swap" rel="stylesheet">
       <style>
-        @page { margin: 12mm; size: A4; }
-        body { font-family: Inter, sans-serif; padding: 16px; color: #1E1712; background: #FAF6F0; }
-        h1 { margin: 0; font-family: 'Zhi Mang Xing', cursive; font-size: 30px; color: #1E1712; }
-        .meta { font-family: 'Long Cang', cursive; color: #7A6E62; font-size: 15px; margin: 6px 0 12px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { text-align: left; border-bottom: 2px solid #1E1712; padding: 6px 4px; font-size: 12px; font-weight: 600; }
-        td { padding: 8px 4px; border-bottom: 1px solid #E2D5C5; vertical-align: top; }
-        .code { font-family: monospace; font-weight: bold; font-size: 16px; color: #E84A2E; }
+        @page { margin: 10mm; size: A4 portrait; }
+        body { font-family: Inter, sans-serif; padding: 14px 18px; color: #1E1712; background: #FAF6F0; }
+        h1 { margin: 0; font-family: 'Zhi Mang Xing', cursive; font-size: 26px; color: #1E1712; }
+        .meta { font-family: 'Long Cang', cursive; color: #7A6E62; font-size: 14px; margin: 5px 0 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; page-break-inside: avoid; }
+        th { text-align: left; border-bottom: 2px solid #1E1712; padding: 5px 3px; font-size: 11px; font-weight: 600; }
+        td { padding: 6px 3px; border-bottom: 1px solid #E2D5C5; vertical-align: top; }
+        .code { font-family: monospace; font-weight: bold; font-size: 18px; color: #E84A2E; letter-spacing: 1px; }
         .status { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
         .pickup { background: #dbeafe; color: #1e40af; }
         .done { background: #dcfce7; color: #166534; }
         .check { width: 20px; height: 20px; border: 2px solid #1E1712; display: inline-block; border-radius: 3px; }
-        .seal { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border: 2.5px solid #E84A2E; border-radius: 8px; color: #E84A2E; font-family: 'Zhi Mang Xing', cursive; font-size: 26px; margin-top: 20px; }
+        .seal { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border: 2.5px solid #E84A2E; border-radius: 8px; color: #E84A2E; font-family: 'Zhi Mang Xing', cursive; font-size: 24px; margin-top: 16px; }
+        tr { page-break-inside: avoid; }
       </style></head><body>
       <h1>Mio 自提名单 · ${store.name}</h1>
       <div class="meta">${store.address} · 共 ${storeOrders.length} 单</div>

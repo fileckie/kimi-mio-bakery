@@ -1,14 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { useAppStore } from "./stores/appStore";
 import { CustomerPage } from "./components/customer/CustomerPage";
 import { AdminPage } from "./components/admin/AdminPage";
 import { PosTerminal } from "./components/admin/PosTerminal";
+import { AdminLogin } from "./components/admin/AdminLogin";
 import { LoadingShell } from "./components/ui/LoadingShell";
 import { ToastContainer } from "./components/ui/Toast";
 
 function App() {
   const { route, products, stores, isLoading, error, refreshData, setRoute } = useAppStore();
+  const [adminLoggedIn, setAdminLoggedIn] = useState(() => !!sessionStorage.getItem("mio_admin_token"));
 
   useEffect(() => {
     refreshData();
@@ -58,13 +60,15 @@ function App() {
         {route === "/" ? (
           <CustomerPage />
         ) : route === "/admin" ? (
-          <AdminPage />
+          adminLoggedIn ? <AdminPage /> : <AdminLogin onLogin={() => setAdminLoggedIn(true)} />
         ) : route === "/admin/pos" ? (
-          <PosTerminal
-            products={products}
-            stores={stores}
-            inventory={useAppStore.getState().inventory}
-          />
+          adminLoggedIn ? (
+            <PosTerminal
+              products={products}
+              stores={stores}
+              inventory={useAppStore.getState().inventory}
+            />
+          ) : <AdminLogin onLogin={() => setAdminLoggedIn(true)} />
         ) : null}
       </div>
 

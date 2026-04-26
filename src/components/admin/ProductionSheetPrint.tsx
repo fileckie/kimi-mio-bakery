@@ -35,16 +35,17 @@ export function ProductionSheetPrint({ sheet, stores, batchSale }: Props) {
       <html><head><title>分拣单-${store.name}</title>
       <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=Long+Cang&display=swap" rel="stylesheet">
       <style>
-        @page { margin: 12mm; size: A4; }
-        body { font-family: Inter, sans-serif; padding: 24px; color: #1E1712; background: #FAF6F0; }
-        h1 { margin: 0; font-family: 'Zhi Mang Xing', cursive; font-size: 32px; color: #1E1712; }
-        .meta { font-family: 'Long Cang', cursive; color: #7A6E62; font-size: 15px; margin: 8px 0 16px; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; border-bottom: 2px solid #1E1712; padding: 8px 0; font-size: 14px; font-weight: 600; }
-        td { padding: 8px 0; border-bottom: 1px solid #E2D5C5; font-size: 16px; }
-        .total { font-weight: bold; font-size: 18px; margin-top: 16px; border-top: 2px solid #1E1712; padding-top: 8px; }
-        .check { width: 24px; height: 24px; border: 2px solid #1E1712; display: inline-block; border-radius: 3px; }
-        .seal { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border: 2.5px solid #E84A2E; border-radius: 8px; color: #E84A2E; font-family: 'Zhi Mang Xing', cursive; font-size: 26px; margin-top: 24px; }
+        @page { margin: 10mm; size: A4 portrait; }
+        body { font-family: Inter, sans-serif; padding: 16px 20px; color: #1E1712; background: #FAF6F0; }
+        h1 { margin: 0; font-family: 'Zhi Mang Xing', cursive; font-size: 28px; color: #1E1712; }
+        .meta { font-family: 'Long Cang', cursive; color: #7A6E62; font-size: 14px; margin: 6px 0 14px; }
+        table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+        th { text-align: left; border-bottom: 2px solid #1E1712; padding: 6px 0; font-size: 13px; font-weight: 600; }
+        td { padding: 6px 0; border-bottom: 1px solid #E2D5C5; font-size: 15px; }
+        .total { font-weight: bold; font-size: 16px; margin-top: 12px; border-top: 2px solid #1E1712; padding-top: 6px; }
+        .check { width: 22px; height: 22px; border: 2px solid #1E1712; display: inline-block; border-radius: 3px; }
+        .seal { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border: 2.5px solid #E84A2E; border-radius: 8px; color: #E84A2E; font-family: 'Zhi Mang Xing', cursive; font-size: 24px; margin-top: 20px; }
+        tr { page-break-inside: avoid; }
       </style></head><body>
       <h1>Mio 分拣单</h1>
       <div class="meta">${store.name} · ${store.address} · 取货码 ${store.sourceCode}</div>

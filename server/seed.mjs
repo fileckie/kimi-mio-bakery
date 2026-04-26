@@ -20,10 +20,9 @@ export const seedProducts = [
 ];
 
 export const seedStores = [
-  ["store-a", "A 店 · 中央厨房", "central", "中央厨房与主门店", 1, "MIO-A"],
-  ["store-b", "B 店 · 社区自提点", "pickup", "社区北门自提点", 1, "MIO-B"],
-  ["store-c", "C 店 · 商圈自提点", "pickup", "商圈咖啡店联名点", 1, "MIO-C"],
-  ["store-d", "D 店 · 写字楼自提点", "pickup", "写字楼前台自提", 1, "MIO-D"],
+  ["store-a", "lim天鹅湖店", "central", "深圳市福田区天鹅湖花园三期 L112", 1, "MIO-A"],
+  ["store-b", "南山店", "pickup", "深圳市南山区后海滨路 2013 号", 1, "MIO-B"],
+  ["store-c", "罗湖店", "pickup", "深圳市罗湖区桂园路 88 号", 0, "MIO-C"],
 ];
 
 export const seedBatchSale = {
@@ -32,7 +31,7 @@ export const seedBatchSale = {
   deadline: "今晚 21:30",
   ovenBatch: "明日 10:30 / 16:30 出炉",
   featuredProductIds: ["lychee-rose", "salt-roll", "pistachio-toast"],
-  pickupStoreIds: ["store-a", "store-b", "store-c", "store-d"],
+  pickupStoreIds: ["store-a", "store-b"],
   freeShippingThreshold: 150,
   baseShippingFee: 10,
   note: "集中预订，按门店分配库存，次日到店自提或本地配送。",
