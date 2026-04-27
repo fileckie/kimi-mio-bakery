@@ -66,7 +66,7 @@ export function CustomerPage() {
             <p className="font-display text-3xl font-bold text-kiln">Mio</p>
             <p className="font-script text-lg italic text-smoke mt-1">slowfire</p>
             <p className="font-brush text-2xl text-ember mt-3">慢火窑烤面包</p>
-            <p className="mt-6 font-hand text-sm text-muted">不多做，只为你烤 · 加微信 {batchSale.paymentWechatId}</p>
+            <p className="mt-6 font-hand text-sm text-muted">{batchSale.footerTagline} · 加微信 {batchSale.paymentWechatId}</p>
           </div>
         </footer>
       </main>

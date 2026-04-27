@@ -15,56 +15,155 @@ export function OrderSuccessModal({ order, stores, batchSale, onClose }: Props) 
 
   const saveImage = () => {
     const canvas = document.createElement("canvas");
-    canvas.width = 600;
-    canvas.height = 800;
+    const W = 640;
+    const H = 900;
+    canvas.width = W * 2;
+    canvas.height = H * 2;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    ctx.scale(2, 2);
 
+    // Background
     ctx.fillStyle = "#FAF6F0";
-    ctx.fillRect(0, 0, 600, 800);
+    ctx.fillRect(0, 0, W, H);
 
-    ctx.fillStyle = "#1E1712";
-    ctx.textAlign = "center";
-    ctx.font = "bold 36px sans-serif";
-    ctx.fillText("Mio", 300, 70);
-    ctx.font = "italic 16px serif";
-    ctx.fillStyle = "#7A6E62";
-    ctx.fillText("SLOWFIRE — 慢火窑烤", 300, 95);
-
+    // Border frame
     ctx.strokeStyle = "#E2D5C5";
-    ctx.beginPath(); ctx.moveTo(40, 120); ctx.lineTo(560, 120); ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeRect(24, 24, W - 48, H - 48);
+    ctx.strokeStyle = "#1E1712";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(30, 30, W - 60, H - 60);
 
-    let y = 160;
+    // Top accent line
+    ctx.fillStyle = "#E84A2E";
+    ctx.fillRect(30, 30, W - 60, 4);
+
+    // Header
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#1E1712";
+    ctx.font = "600 28px Inter, sans-serif";
+    ctx.fillText("Mio", W / 2, 80);
+    ctx.fillStyle = "#7A6E62";
+    ctx.font = "italic 15px Cormorant Garamond, Georgia, serif";
+    ctx.fillText("SLOWFIRE — HANDCRAFTED SOURDOUGH", W / 2, 105);
+
+    // Divider
+    ctx.strokeStyle = "#E2D5C5";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(60, 130); ctx.lineTo(W - 60, 130); ctx.stroke();
+
+    // Success badge area
+    ctx.fillStyle = "#1E1712";
+    ctx.font = "600 13px Inter, sans-serif";
+    ctx.letterSpacing = "3px";
+    ctx.fillText(batchSale.successTitle, W / 2, 165);
+    ctx.letterSpacing = "0";
+
+    ctx.fillStyle = "#7A6E62";
+    ctx.font = "13px Inter, sans-serif";
+    ctx.fillText(`${order.id} · ${order.createdAt}`, W / 2, 190);
+
+    // Items
+    let y = 240;
     ctx.textAlign = "left";
-    ctx.fillStyle = "#7A6E62"; ctx.font = "13px sans-serif";
-    ctx.fillText(`订单号: ${order.id}`, 40, y); y += 28;
-    ctx.fillText(`下单时间: ${order.createdAt}`, 40, y); y += 40;
+    ctx.fillStyle = "#7A6E62";
+    ctx.font = "600 11px Inter, sans-serif";
+    ctx.letterSpacing = "2px";
+    ctx.fillText("YOUR ORDER", 60, y);
+    ctx.letterSpacing = "0";
 
-    ctx.fillStyle = "#1E1712"; ctx.font = "16px sans-serif";
+    y += 30;
     order.items.forEach((item) => {
-      ctx.textAlign = "left"; ctx.fillText(item.name, 40, y);
-      ctx.textAlign = "right"; ctx.fillText(`¥${item.price} × ${item.qty}`, 560, y);
-      y += 32;
+      ctx.fillStyle = "#1E1712";
+      ctx.font = "15px Inter, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(item.name, 60, y);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#7A6E62";
+      ctx.font = "13px Inter, sans-serif";
+      ctx.fillText(`${item.qty} × ¥${item.price}`, W - 60, y);
+      y += 36;
     });
 
-    y += 20;
-    ctx.strokeStyle = "#E2D5C5"; ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(560, y); ctx.stroke();
+    // Divider before total
+    y += 10;
+    ctx.strokeStyle = "#E2D5C5";
+    ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(W - 60, y); ctx.stroke();
+
+    // Total
+    y += 40;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#7A6E62";
+    ctx.font = "600 11px Inter, sans-serif";
+    ctx.letterSpacing = "2px";
+    ctx.fillText("TOTAL", 60, y);
+    ctx.letterSpacing = "0";
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#E84A2E";
+    ctx.font = "bold 28px Inter, sans-serif";
+    ctx.fillText(`¥${order.total}`, W - 60, y);
+
+    // Pickup info
+    y += 50;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#7A6E62";
+    ctx.font = "600 11px Inter, sans-serif";
+    ctx.letterSpacing = "2px";
+    ctx.fillText("PICKUP", 60, y);
+    ctx.letterSpacing = "0";
+
+    y += 28;
+    ctx.fillStyle = "#1E1712";
+    ctx.font = "14px Inter, sans-serif";
+    ctx.fillText(getStoreName(stores, order.pickupStoreId), 60, y);
+    y += 22;
+    ctx.fillStyle = "#7A6E62";
+    ctx.font = "13px Inter, sans-serif";
+    ctx.fillText(`${order.deliveryMethod}`, 60, y);
+
+    if (order.pickupCode) {
+      y += 30;
+      ctx.fillStyle = "#7A6E62";
+      ctx.font = "600 11px Inter, sans-serif";
+      ctx.letterSpacing = "2px";
+      ctx.fillText("CODE", 60, y);
+      ctx.letterSpacing = "0";
+      y += 28;
+      ctx.fillStyle = "#E84A2E";
+      ctx.font = "bold 22px monospace";
+      ctx.fillText(order.pickupCode, 60, y);
+    }
+
+    // Bottom divider
+    y = H - 140;
+    ctx.strokeStyle = "#E2D5C5";
+    ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(W - 60, y); ctx.stroke();
+
+    // Bottom message
+    y += 40;
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#1E1712";
+    ctx.font = "italic 17px Cormorant Garamond, Georgia, serif";
+    ctx.fillText(batchSale.successMessage, W / 2, y);
+
+    // Seal
     y += 35;
-    ctx.textAlign = "right"; ctx.font = "bold 22px sans-serif"; ctx.fillStyle = "#1E1712";
-    ctx.fillText(`合计 ¥${order.total}`, 560, y);
+    ctx.strokeStyle = "#E84A2E";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(W / 2 - 28, y, 56, 56);
+    ctx.fillStyle = "#E84A2E";
+    ctx.font = "22px serif";
+    ctx.fillText("窑烤", W / 2, y + 38);
 
-    y += 50;
-    ctx.textAlign = "left"; ctx.font = "14px sans-serif"; ctx.fillStyle = "#7A6E62";
-    ctx.fillText(`取货门店: ${getStoreName(stores, order.pickupStoreId)}`, 40, y); y += 26;
-    ctx.fillText(`配送方式: ${order.deliveryMethod}`, 40, y); y += 26;
-    if (order.pickupCode) ctx.fillText(`取货暗号: ${order.pickupCode}`, 40, y);
-
-    y += 50;
-    ctx.textAlign = "center"; ctx.fillStyle = "#E84A2E"; ctx.font = "italic 18px serif";
-    ctx.fillText("面团已入单，窑火为你而燃", 300, y);
+    // Footer
+    y = H - 40;
+    ctx.fillStyle = "#A89E94";
+    ctx.font = "10px Inter, sans-serif";
+    ctx.fillText("Mio SLOWFIRE · 不多做，只为你烤", W / 2, y);
 
     const link = document.createElement("a");
-    link.download = `Mio-订单-${order.id}.png`;
+    link.download = `Mio-Order-${order.id}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
@@ -78,21 +177,31 @@ export function OrderSuccessModal({ order, stores, batchSale, onClose }: Props) 
 
   return (
     <div className="fixed inset-0 z-[70] bg-kiln/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-8 shadow-elevated animate-slide-up">
+      <div className="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-8 shadow-elevated animate-slide-up relative">
+        {/* Top accent */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-ember via-wheat to-ember" />
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
               <BadgeCheck className="h-6 w-6 text-green-600" />
             </span>
-            <h2 className="text-xl font-semibold text-kiln">预订成功</h2>
+            <div>
+              <p className="text-[10px] font-semibold tracking-[0.2em] text-muted uppercase">{batchSale.successTitle}</p>
+              <h2 className="text-xl font-semibold text-kiln">预订成功</h2>
+            </div>
           </div>
           <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full bg-surface hover:bg-kiln hover:text-white transition">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="mt-6 space-y-3 text-sm">
-          <div className="flex justify-between"><span className="text-muted">订单号</span><span className="font-mono font-semibold text-kiln">{order.id}</span></div>
+        {/* Order card */}
+        <div className="mt-6 rounded-2xl border border-border bg-ash p-5 space-y-3 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] font-semibold tracking-wider text-muted uppercase">Order No.</span>
+            <span className="font-mono font-semibold text-kiln">{order.id}</span>
+          </div>
           {order.items.map((i) => (
             <div key={i.productId} className="flex justify-between">
               <span className="text-kiln">{i.name} <span className="text-muted">× {i.qty}</span></span>
@@ -100,12 +209,17 @@ export function OrderSuccessModal({ order, stores, batchSale, onClose }: Props) 
             </div>
           ))}
           <div className="flex justify-between border-t border-border pt-3">
-            <span className="font-semibold text-kiln">合计</span>
+            <span className="text-[10px] font-semibold tracking-wider text-muted uppercase">Total</span>
             <span className="text-xl font-bold text-ember">¥{order.total}</span>
           </div>
-          <div className="pt-2 text-muted">
+          <div className="pt-1 text-muted text-xs space-y-1">
             <p>{getStoreName(stores, order.pickupStoreId)} · {order.deliveryMethod}</p>
-            {order.pickupCode && <p className="mt-1">取货暗号 <span className="font-mono font-bold text-kiln">{order.pickupCode}</span></p>}
+            {order.pickupCode && (
+              <p>
+                <span className="text-[10px] tracking-wider text-muted uppercase mr-1">Pickup Code</span>
+                <span className="font-mono font-bold text-kiln text-lg">{order.pickupCode}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -113,7 +227,7 @@ export function OrderSuccessModal({ order, stores, batchSale, onClose }: Props) 
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <div className="flex items-center gap-2 mb-3">
             <MessageCircle className="h-5 w-5 text-amber-700" />
-            <p className="font-semibold text-amber-900">下一步：完成付款</p>
+            <p className="text-[10px] font-semibold tracking-wider text-amber-700 uppercase">Next Step</p>
           </div>
 
           {batchSale.paymentQrUrl ? (
@@ -138,7 +252,7 @@ export function OrderSuccessModal({ order, stores, batchSale, onClose }: Props) 
 
           <div className="mt-3 flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-amber-200">
             <div>
-              <p className="text-xs text-amber-600">主理人微信</p>
+              <p className="text-[10px] tracking-wider text-amber-500 uppercase">WeChat</p>
               <p className="font-mono font-bold text-amber-900">{batchSale.paymentWechatId}</p>
             </div>
             <button
@@ -151,8 +265,8 @@ export function OrderSuccessModal({ order, stores, batchSale, onClose }: Props) 
           </div>
         </div>
 
-        <p className="mt-5 font-brush text-center text-xl text-ember">
-          面团已入单，窑火为你而燃
+        <p className="mt-5 text-center">
+          <span className="font-serif text-lg italic text-ember">{batchSale.successMessage}</span>
         </p>
 
         <button onClick={saveImage} className="mt-5 w-full rounded-full bg-kiln py-3 text-sm font-semibold text-ash hover:bg-kiln-light transition flex items-center justify-center gap-2">

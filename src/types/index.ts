@@ -48,7 +48,7 @@ export interface OvenBatch {
 export interface BatchSale {
   isOpen: boolean;
   deadline: string;
-  defaultDeadline: string;      // 默认截单时间，如 "21:30"
+  defaultDeadline: string;
   ovenBatch: string;
   ovenBatches: OvenBatch[];
   featuredProductIds: string[];
@@ -59,6 +59,16 @@ export interface BatchSale {
   paymentWechatId: string;
   paymentQrUrl: string;
   paymentInstruction: string;
+  // Customizable copy
+  checkoutTitle: string;
+  checkoutSubtitle: string;
+  checkoutEmptyHint: string;
+  closedMessage: string;
+  memberLabel: string;
+  memberHint: string;
+  successTitle: string;
+  successMessage: string;
+  footerTagline: string;
 }
 
 export interface Customer {

@@ -112,6 +112,56 @@ export function SettingsPanel({ batchSale, stores, products, onUpdate }: Setting
               <input className="input-field" type="number" value={batchSale.baseShippingFee} onChange={(e) => updateBatch({ baseShippingFee: Number(e.target.value) })} />
             </label>
           </div>
+
+          {/* Copy customization */}
+          <div className="rounded-xl bg-ash p-4">
+            <p className="font-semibold text-kiln">页面文案定制</p>
+            <p className="text-xs text-muted mt-1">修改顾客端展示的文案内容</p>
+            <div className="mt-3 grid gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm">
+                  <span className="mb-1.5 block text-xs text-muted">下单面板英文标题</span>
+                  <input className="input-field py-2 text-sm" value={batchSale.checkoutTitle} onChange={(e) => updateBatch({ checkoutTitle: e.target.value })} />
+                </label>
+                <label className="text-sm">
+                  <span className="mb-1.5 block text-xs text-muted">下单面板中文副标题</span>
+                  <input className="input-field py-2 text-sm" value={batchSale.checkoutSubtitle} onChange={(e) => updateBatch({ checkoutSubtitle: e.target.value })} />
+                </label>
+              </div>
+              <label className="text-sm">
+                <span className="mb-1.5 block text-xs text-muted">空购物车提示</span>
+                <input className="input-field py-2 text-sm" value={batchSale.checkoutEmptyHint} onChange={(e) => updateBatch({ checkoutEmptyHint: e.target.value })} />
+              </label>
+              <label className="text-sm">
+                <span className="mb-1.5 block text-xs text-muted">截单后提示文案</span>
+                <input className="input-field py-2 text-sm" value={batchSale.closedMessage} onChange={(e) => updateBatch({ closedMessage: e.target.value })} />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm">
+                  <span className="mb-1.5 block text-xs text-muted">会员区英文标签</span>
+                  <input className="input-field py-2 text-sm" value={batchSale.memberLabel} onChange={(e) => updateBatch({ memberLabel: e.target.value })} />
+                </label>
+                <label className="text-sm">
+                  <span className="mb-1.5 block text-xs text-muted">会员区提示文案</span>
+                  <input className="input-field py-2 text-sm" value={batchSale.memberHint} onChange={(e) => updateBatch({ memberHint: e.target.value })} />
+                </label>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm">
+                  <span className="mb-1.5 block text-xs text-muted">成功弹窗英文标题</span>
+                  <input className="input-field py-2 text-sm" value={batchSale.successTitle} onChange={(e) => updateBatch({ successTitle: e.target.value })} />
+                </label>
+                <label className="text-sm">
+                  <span className="mb-1.5 block text-xs text-muted">成功弹窗底部文案</span>
+                  <input className="input-field py-2 text-sm" value={batchSale.successMessage} onChange={(e) => updateBatch({ successMessage: e.target.value })} />
+                </label>
+              </div>
+              <label className="text-sm">
+                <span className="mb-1.5 block text-xs text-muted">页脚标语</span>
+                <input className="input-field py-2 text-sm" value={batchSale.footerTagline} onChange={(e) => updateBatch({ footerTagline: e.target.value })} />
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 

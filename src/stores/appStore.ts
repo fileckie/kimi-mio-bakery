@@ -47,6 +47,15 @@ const emptyBatchSale: BatchSale = {
   paymentWechatId: "mio220827",
   paymentQrUrl: "",
   paymentInstruction: "下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。",
+  checkoutTitle: "YOUR ORDER",
+  checkoutSubtitle: "本轮接受预订",
+  checkoutEmptyHint: "从左侧挑选喜欢的窑烤面包",
+  closedMessage: "本轮窑烤已结束，下一炉开启时会在社群通知。",
+  memberLabel: "MEMBER",
+  memberHint: "输入姓名和手机号即可预订",
+  successTitle: "ORDER CONFIRMED",
+  successMessage: "面团已入单，窑火为你而燃",
+  footerTagline: "不多做，只为你烤",
 };
 
 function normalizeRoute(pathname: string): Route {

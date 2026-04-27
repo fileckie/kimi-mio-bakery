@@ -49,7 +49,16 @@ export function initDb() {
       note TEXT NOT NULL,
       paymentWechatId TEXT NOT NULL DEFAULT 'mio220827',
       paymentQrUrl TEXT NOT NULL DEFAULT '',
-      paymentInstruction TEXT NOT NULL DEFAULT '下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。'
+      paymentInstruction TEXT NOT NULL DEFAULT '下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。',
+      checkoutTitle TEXT NOT NULL DEFAULT 'YOUR ORDER',
+      checkoutSubtitle TEXT NOT NULL DEFAULT '本轮接受预订',
+      checkoutEmptyHint TEXT NOT NULL DEFAULT '从左侧挑选喜欢的窑烤面包',
+      closedMessage TEXT NOT NULL DEFAULT '本轮窑烤已结束，下一炉开启时会在社群通知。',
+      memberLabel TEXT NOT NULL DEFAULT 'MEMBER',
+      memberHint TEXT NOT NULL DEFAULT '输入姓名和手机号即可预订',
+      successTitle TEXT NOT NULL DEFAULT 'ORDER CONFIRMED',
+      successMessage TEXT NOT NULL DEFAULT '面团已入单，窑火为你而燃',
+      footerTagline TEXT NOT NULL DEFAULT '不多做，只为你烤'
     );
     CREATE TABLE IF NOT EXISTS customers (
       id TEXT PRIMARY KEY,
@@ -126,6 +135,15 @@ export function initDb() {
   ensureColumn("batch_sales", "paymentQrUrl", "TEXT NOT NULL DEFAULT ''");
   ensureColumn("batch_sales", "paymentInstruction", "TEXT NOT NULL DEFAULT '下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。'");
   ensureColumn("batch_sales", "defaultDeadline", "TEXT NOT NULL DEFAULT '21:30'");
+  ensureColumn("batch_sales", "checkoutTitle", "TEXT NOT NULL DEFAULT 'YOUR ORDER'");
+  ensureColumn("batch_sales", "checkoutSubtitle", "TEXT NOT NULL DEFAULT '本轮接受预订'");
+  ensureColumn("batch_sales", "checkoutEmptyHint", "TEXT NOT NULL DEFAULT '从左侧挑选喜欢的窑烤面包'");
+  ensureColumn("batch_sales", "closedMessage", "TEXT NOT NULL DEFAULT '本轮窑烤已结束，下一炉开启时会在社群通知。'");
+  ensureColumn("batch_sales", "memberLabel", "TEXT NOT NULL DEFAULT 'MEMBER'");
+  ensureColumn("batch_sales", "memberHint", "TEXT NOT NULL DEFAULT '输入姓名和手机号即可预订'");
+  ensureColumn("batch_sales", "successTitle", "TEXT NOT NULL DEFAULT 'ORDER CONFIRMED'");
+  ensureColumn("batch_sales", "successMessage", "TEXT NOT NULL DEFAULT '面团已入单，窑火为你而燃'");
+  ensureColumn("batch_sales", "footerTagline", "TEXT NOT NULL DEFAULT '不多做，只为你烤'");
   ensureColumn("orders", "customerId", "TEXT");
   ensureColumn("orders", "customerName", "TEXT");
   ensureColumn("orders", "customerPhone", "TEXT");
@@ -433,7 +451,10 @@ export function updateBatchSale(patch) {
   db.prepare(`
     UPDATE batch_sales SET isOpen = ?, deadline = ?, defaultDeadline = ?, ovenBatch = ?, ovenBatches = ?, featuredProductIds = ?,
     pickupStoreIds = ?, freeShippingThreshold = ?, baseShippingFee = ?, note = ?,
-    paymentWechatId = ?, paymentQrUrl = ?, paymentInstruction = ? WHERE id = 'current'
+    paymentWechatId = ?, paymentQrUrl = ?, paymentInstruction = ?,
+    checkoutTitle = ?, checkoutSubtitle = ?, checkoutEmptyHint = ?, closedMessage = ?,
+    memberLabel = ?, memberHint = ?, successTitle = ?, successMessage = ?, footerTagline = ?
+    WHERE id = 'current'
   `).run(
     next.isOpen,
     next.deadline,
@@ -448,6 +469,15 @@ export function updateBatchSale(patch) {
     next.paymentWechatId ?? "mio220827",
     next.paymentQrUrl ?? "",
     next.paymentInstruction ?? "下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。",
+    next.checkoutTitle ?? current.checkoutTitle ?? "YOUR ORDER",
+    next.checkoutSubtitle ?? current.checkoutSubtitle ?? "本轮接受预订",
+    next.checkoutEmptyHint ?? current.checkoutEmptyHint ?? "从左侧挑选喜欢的窑烤面包",
+    next.closedMessage ?? current.closedMessage ?? "本轮窑烤已结束，下一炉开启时会在社群通知。",
+    next.memberLabel ?? current.memberLabel ?? "MEMBER",
+    next.memberHint ?? current.memberHint ?? "输入姓名和手机号即可预订",
+    next.successTitle ?? current.successTitle ?? "ORDER CONFIRMED",
+    next.successMessage ?? current.successMessage ?? "面团已入单，窑火为你而燃",
+    next.footerTagline ?? current.footerTagline ?? "不多做，只为你烤",
   );
   return mapBatchSale(db.prepare("SELECT * FROM batch_sales WHERE id = 'current'").get());
 }
@@ -639,6 +669,15 @@ function mapBatchSale(row) {
     paymentWechatId: row.paymentWechatId || "mio220827",
     paymentQrUrl: row.paymentQrUrl || "",
     paymentInstruction: row.paymentInstruction || "下单后请添加主理人微信，发送订购单并完成转账，后台确认后安排制作。",
+    checkoutTitle: row.checkoutTitle || "YOUR ORDER",
+    checkoutSubtitle: row.checkoutSubtitle || "本轮接受预订",
+    checkoutEmptyHint: row.checkoutEmptyHint || "从左侧挑选喜欢的窑烤面包",
+    closedMessage: row.closedMessage || "本轮窑烤已结束，下一炉开启时会在社群通知。",
+    memberLabel: row.memberLabel || "MEMBER",
+    memberHint: row.memberHint || "输入姓名和手机号即可预订",
+    successTitle: row.successTitle || "ORDER CONFIRMED",
+    successMessage: row.successMessage || "面团已入单，窑火为你而燃",
+    footerTagline: row.footerTagline || "不多做，只为你烤",
   };
 }
 

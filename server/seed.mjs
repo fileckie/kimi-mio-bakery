@@ -36,6 +36,15 @@ export const seedBatchSale = {
   freeShippingThreshold: 150,
   baseShippingFee: 10,
   note: "集中预订，按门店分配库存，次日到店自提或本地配送。",
+  checkoutTitle: "YOUR ORDER",
+  checkoutSubtitle: "本轮接受预订",
+  checkoutEmptyHint: "从左侧挑选喜欢的窑烤面包",
+  closedMessage: "本轮窑烤已结束，下一炉开启时会在社群通知。",
+  memberLabel: "MEMBER",
+  memberHint: "输入姓名和手机号即可预订",
+  successTitle: "ORDER CONFIRMED",
+  successMessage: "面团已入单，窑火为你而燃",
+  footerTagline: "不多做，只为你烤",
 };
 
 export const seedOrders = [
