@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Upload, Camera, ToggleLeft, ToggleRight } from "lucide-react";
-import type { Product, InventoryMap, StoreLocation, Category } from "../../types";
+import type { Product, InventoryMap, StoreLocation, StoreId, Category } from "../../types";
 import { api } from "../../lib/api";
 import { readImageFile } from "../../lib/utils";
 
@@ -23,6 +23,11 @@ export function ProductsPanel({ products, inventory, stores, isHq, onUpdate }: P
   const updateProduct = async (id: string, patch: Partial<Product>) => {
     if (!isHq) return;
     try { await api.updateProduct(id, patch); onUpdate(); } catch (e) { alert("保存失败"); }
+  };
+
+  const updateStock = async (productId: string, storeId: StoreId, value: number) => {
+    if (!isHq) return;
+    try { await api.updateInventory(productId, storeId, Math.max(0, value)); onUpdate(); } catch { alert("库存保存失败"); }
   };
 
   const createProduct = async () => {
@@ -85,11 +90,11 @@ export function ProductsPanel({ products, inventory, stores, isHq, onUpdate }: P
         <div className="mt-5 space-y-3">
           {products.map((p) => (
             <div key={p.id} className="rounded-xl border border-border bg-ash p-4">
-              <div className="grid gap-4 sm:grid-cols-[80px_1fr_auto]">
-                <div className={`h-20 rounded-xl bg-gradient-to-br ${p.imageTone} flex items-center justify-center overflow-hidden`}>
+              <div className="flex gap-3 sm:grid sm:grid-cols-[80px_1fr_auto]">
+                <div className={`h-16 w-16 sm:h-20 sm:w-auto shrink-0 rounded-xl bg-gradient-to-br ${p.imageTone} flex items-center justify-center overflow-hidden`}>
                   {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" /> : <span className="text-2xl">🍞</span>}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   {isHq ? (
                     <div className="grid gap-2">
                       <input className="input-field py-2 text-sm" value={p.name} onChange={(e) => updateProduct(p.id, { name: e.target.value })} />
@@ -112,15 +117,46 @@ export function ProductsPanel({ products, inventory, stores, isHq, onUpdate }: P
                     <div>
                       <p className="font-semibold text-kiln">{p.name}</p>
                       <p className="text-sm text-muted">{p.weight} · ¥{p.price}</p>
-                      <p className="text-xs text-muted mt-1">{p.description}</p>
+                      <p className="text-xs text-muted mt-1 line-clamp-2">{p.description}</p>
                     </div>
                   )}
                 </div>
-                <div className="flex items-start gap-3">
+                <div className="flex sm:items-start items-center gap-3 shrink-0">
                   <button onClick={() => isHq && updateProduct(p.id, { isPublished: !p.isPublished })} className="flex items-center gap-1.5 text-sm text-muted">
                     {p.isPublished ? <ToggleRight className="h-5 w-5 text-green-600" /> : <ToggleLeft className="h-5 w-5 text-muted" />}
-                    {p.isPublished ? "上架" : "下架"}
+                    <span className="hidden sm:inline">{p.isPublished ? "上架" : "下架"}</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Inventory allocation */}
+              <div className="mt-3 pt-3 border-t border-border/40">
+                <p className="text-[10px] font-semibold tracking-wider text-muted uppercase mb-2">库存分配</p>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  {stores.map((s) => {
+                    const alloc = inventory[p.id]?.stores[s.id] ?? 0;
+                    const sold = inventory[p.id]?.sold[s.id] ?? 0;
+                    const remaining = Math.max(0, alloc - sold);
+                    return (
+                      <div key={s.id} className="flex items-center gap-2 rounded-lg bg-white px-3 py-2">
+                        <span className="text-xs text-muted truncate">{s.name}</span>
+                        {isHq ? (
+                          <input
+                            className="input-field w-16 py-1 text-xs text-center"
+                            type="number"
+                            min="0"
+                            value={alloc}
+                            onChange={(e) => updateStock(p.id, s.id, Number(e.target.value))}
+                          />
+                        ) : (
+                          <span className="text-xs font-semibold text-kiln">{alloc}</span>
+                        )}
+                        <span className={`text-[10px] ml-auto ${remaining <= 2 ? "text-ember font-semibold" : "text-muted"}`}>
+                          余{remaining}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

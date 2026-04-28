@@ -6,11 +6,11 @@ export type Category = "欧包/坚果" | "吐司" | "恰巴塔" | "贝果/海盐
 export type DeliveryMethod = "门店自提" | "本地配送" | "顺丰快递";
 export type PaymentMethod = "微信转账" | "微信支付" | "支付宝" | "到店付" | "现金";
 export type OrderType = "online" | "pos";
-export type OrderStatus = "待确认" | "待生产" | "待自提" | "待发货" | "已发货" | "已完成";
+export type OrderStatus = "待确认" | "待生产" | "待自提" | "待发货" | "已发货" | "已完成" | "已取消";
 export type Route = "/" | "/admin" | "/admin/pos";
 export type RoleId = "hq" | "store-a" | "store-b" | "store-c" | "store-d";
 export type StoreId = "store-a" | "store-b" | "store-c" | "store-d";
-export type AdminTab = "overview" | "orders" | "members" | "products" | "inventory" | "settings";
+export type AdminTab = "overview" | "orders" | "production" | "products" | "members" | "settings";
 
 export interface Product {
   id: string;
@@ -27,6 +27,11 @@ export interface Product {
   story?: string;           // 主理人故事
   baker?: string;           // 面包师
   bestBefore?: string;      // 最佳食用时间
+  crossSectionImage?: string; // 切面图 URL
+  texture?: string;          // 口感描述
+  crust?: string;            // 外皮描述
+  aroma?: string;            // 香气描述
+  origin?: string;           // 原物料来源
 }
 
 export interface StoreLocation {
@@ -47,6 +52,7 @@ export interface OvenBatch {
 
 export interface BatchSale {
   isOpen: boolean;
+  batchSequence: number;
   deadline: string;
   defaultDeadline: string;
   ovenBatch: string;
@@ -69,6 +75,8 @@ export interface BatchSale {
   successTitle: string;
   successMessage: string;
   footerTagline: string;
+  printLogoUrl?: string;
+  printPrimaryColor?: string;
 }
 
 export interface Customer {
@@ -118,6 +126,7 @@ export interface Order {
   deliveryNote?: string;
   pickupCode?: string;
   createdAt: string;
+  batchSequence?: number;
 }
 
 export interface BootstrapPayload {
@@ -126,6 +135,7 @@ export interface BootstrapPayload {
   batchSale: BatchSale;
   inventory: InventoryMap;
   orders: Order[];
+  changelog: ChangelogEntry[];
 }
 
 export interface DashboardMetrics {
@@ -163,4 +173,13 @@ export interface ToastMessage {
   type: "success" | "error" | "info" | "warning";
   message: string;
   duration?: number;
+}
+
+export interface ChangelogEntry {
+  id: string;
+  date: string;
+  version: string;
+  title: string;
+  items: string[];
+  type: "feature" | "fix" | "improvement" | "breaking";
 }

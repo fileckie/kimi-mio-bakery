@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { BatchSale, InventoryMap, Order, Product, ProductionSheet, StoreLocation, RoleId, Route } from "../types";
+import type { BatchSale, InventoryMap, Order, Product, ProductionSheet, StoreLocation, RoleId, Route, ChangelogEntry } from "../types";
 import { api } from "../lib/api";
 import { useUIStore } from "./uiStore";
 
@@ -11,6 +11,7 @@ interface AppState {
   inventory: InventoryMap;
   orders: Order[];
   productionSheets: ProductionSheet[];
+  changelog: ChangelogEntry[];
   isLoading: boolean;
   error: string | null;
   
@@ -27,6 +28,7 @@ interface AppState {
   setBatchSale: (batchSale: BatchSale | ((prev: BatchSale) => BatchSale)) => void;
   setInventory: (inventory: InventoryMap | ((prev: InventoryMap) => InventoryMap)) => void;
   setOrders: (orders: Order[] | ((prev: Order[]) => Order[])) => void;
+  setChangelog: (changelog: ChangelogEntry[] | ((prev: ChangelogEntry[]) => ChangelogEntry[])) => void;
   setError: (error: string | null) => void;
   createOrder: (order: Order) => Promise<Order | null>;
   closeBatch: () => Promise<ProductionSheet | null>;
@@ -35,6 +37,7 @@ interface AppState {
 
 const emptyBatchSale: BatchSale = {
   isOpen: false,
+  batchSequence: 1,
   deadline: "",
   defaultDeadline: "21:30",
   ovenBatch: "",
@@ -70,6 +73,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   inventory: {},
   orders: [],
   productionSheets: [],
+  changelog: [],
   isLoading: true,
   error: null,
   route: normalizeRoute(window.location.pathname),
@@ -84,7 +88,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveRole: (activeRole) => set({ activeRole }),
 
   refreshData: async () => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const data = await api.bootstrap();
       set({
@@ -93,6 +97,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         batchSale: data.batchSale,
         inventory: data.inventory,
         orders: data.orders,
+        changelog: data.changelog || [],
         isLoading: false,
       });
     } catch (err) {
@@ -126,6 +131,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   setOrders: (orders) =>
     set((state) => ({
       orders: typeof orders === "function" ? orders(state.orders) : orders,
+    })),
+
+  setChangelog: (changelog) =>
+    set((state) => ({
+      changelog: typeof changelog === "function" ? changelog(state.changelog) : changelog,
     })),
 
   closeBatch: async () => {

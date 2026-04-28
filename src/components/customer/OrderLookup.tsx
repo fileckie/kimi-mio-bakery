@@ -15,6 +15,7 @@ const statusStyles: Record<Order["status"], string> = {
   "待发货": "bg-purple-50 text-purple-800",
   "已发货": "bg-sky-50 text-sky-800",
   "已完成": "bg-green-50 text-green-800",
+  "已取消": "bg-stone-100 text-stone-500",
 };
 
 const statusLabels: Record<Order["status"], string> = {
@@ -24,6 +25,7 @@ const statusLabels: Record<Order["status"], string> = {
   "待发货": "已出炉，等待配送",
   "已发货": "配送中",
   "已完成": "已完成",
+  "已取消": "订单已取消",
 };
 
 export function OrderLookup({ stores }: OrderLookupProps) {
@@ -31,6 +33,7 @@ export function OrderLookup({ stores }: OrderLookupProps) {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const lookup = async () => {
     if (!code.trim()) return;
@@ -71,7 +74,28 @@ export function OrderLookup({ stores }: OrderLookupProps) {
             <div className="mt-5 rounded-xl border border-border bg-ash p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold text-kiln">订单 {order.id}</p>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[order.status]}`}>{order.status}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[order.status]}`}>{order.status}</span>
+                  {order.status === "待确认" && (
+                    <button
+                      onClick={async () => {
+                        if (!confirm("确定取消此订单？取消后不可恢复。")) return;
+                        setCancelling(true);
+                        try {
+                          const updated = await api.cancelOrder(order.id);
+                          setOrder(updated);
+                        } catch (err: any) {
+                          alert(err.message || "取消失败");
+                        }
+                        setCancelling(false);
+                      }}
+                      disabled={cancelling}
+                      className="text-xs text-stone-400 hover:text-ember underline transition disabled:opacity-50"
+                    >
+                      {cancelling ? "取消中..." : "取消订单"}
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="mt-1 text-sm text-muted">{statusLabels[order.status]}</p>
               <p className="mt-2 text-sm text-muted">

@@ -20,6 +20,8 @@ export function MobileCheckout({ total, children }: MobileCheckoutProps) {
   const startY = useRef(0);
   const startTime = useRef(0);
 
+  const rafId = useRef<number>(0);
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     startY.current = e.touches[0].clientY;
     startTime.current = Date.now();
@@ -29,9 +31,9 @@ export function MobileCheckout({ total, children }: MobileCheckoutProps) {
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isDragging) return;
     const delta = e.touches[0].clientY - startY.current;
-    // Only allow dragging down
     if (delta > 0) {
-      setDragY(delta);
+      if (rafId.current) cancelAnimationFrame(rafId.current);
+      rafId.current = requestAnimationFrame(() => setDragY(delta));
     }
   }, [isDragging]);
 
@@ -41,19 +43,18 @@ export function MobileCheckout({ total, children }: MobileCheckoutProps) {
     const elapsed = Date.now() - startTime.current;
     const velocity = delta / (elapsed || 1);
 
-    // Close if dragged more than 100px or with high velocity
     if (delta > 100 || (delta > 40 && velocity > 0.5)) {
       setDragY(0);
       setMobileCheckoutOpen(false);
     } else {
-      // Snap back
       setDragY(0);
     }
+    if (rafId.current) cancelAnimationFrame(rafId.current);
   }, [dragY, setMobileCheckoutOpen]);
 
   const sheetStyle = isDragging
-    ? { transform: `translateY(${dragY}px)`, transition: "none" }
-    : { transform: "translateY(0)", transition: "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)" };
+    ? { transform: `translateY(${dragY}px)`, transition: "none", touchAction: "pan-y" as const }
+    : { transform: "translateY(0)", transition: "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)", touchAction: "pan-y" as const };
 
   return (
     <>
@@ -80,28 +81,31 @@ export function MobileCheckout({ total, children }: MobileCheckoutProps) {
             onClick={() => setMobileCheckoutOpen(false)}
           />
 
-          {/* Sheet with swipe-to-dismiss */}
+          {/* Full-screen checkout sheet */}
           <div
             ref={sheetRef}
-            className="absolute inset-x-0 bottom-0 max-h-[88svh] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-elevated"
+            className="absolute inset-x-0 bottom-0 h-[95svh] overflow-y-auto rounded-t-3xl bg-white shadow-elevated"
             style={sheetStyle}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Drag handle */}
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border" />
-
-            <div className="mb-4 flex items-center justify-between">
-              <p className="font-brush text-xl text-kiln">确认预订</p>
-              <button
-                onClick={() => setMobileCheckoutOpen(false)}
-                className="press-feedback flex h-9 w-9 items-center justify-center rounded-full bg-surface transition hover:bg-kiln hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
+            {/* Sticky header */}
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-border px-5 pt-4 pb-3">
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
+              <div className="flex items-center justify-between">
+                <p className="font-brush text-xl text-kiln">确认预订</p>
+                <button
+                  onClick={() => setMobileCheckoutOpen(false)}
+                  className="press-feedback flex h-9 w-9 items-center justify-center rounded-full bg-surface transition hover:bg-kiln hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-            {children}
+            <div className="px-5 pb-8 pt-2">
+              {children}
+            </div>
           </div>
         </div>
       )}

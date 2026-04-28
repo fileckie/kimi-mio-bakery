@@ -28,7 +28,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-ash text-kiln">
+      <div className="min-h-screen bg-ash text-kiln overflow-x-hidden">
         <LoadingShell />
       </div>
     );

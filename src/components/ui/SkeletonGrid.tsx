@@ -19,7 +19,7 @@ export function SkeletonGrid({ count = 6 }: { count?: number }) {
         </div>
 
         {/* Cards with stagger */}
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 sm:mt-8 grid grid-cols-1 gap-3 sm:gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: count }).map((_, i) => (
             <div
               key={i}

@@ -3,6 +3,7 @@ import {
   batchUpdateOrderStatus,
   closeBatchAndCreateSheet,
   createProduct,
+  createStore,
   findOrderByCode,
   getBatchSale,
   getBootstrap,
@@ -13,6 +14,8 @@ import {
   getProductionSheet,
   getProductionSheets,
   getOrders,
+  getChangelog,
+  createChangelogEntry,
   insertOrder,
   loginCustomer,
   registerCustomer,
@@ -21,9 +24,12 @@ import {
   updateOrderFulfillment,
   updateOrderStatus,
   updateProduct,
+  updateProductionSheetItem,
+  updateProductionSheetItems,
   updateProductionSheetStatus,
   updateStore,
 } from "./db.mjs";
+import { listBackups, backupDatabase } from "./backup.mjs";
 
 export async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/bootstrap") {
@@ -129,6 +135,12 @@ export async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/api/admin/stores") {
+    const store = createStore(await readJson(req));
+    sendJson(res, 201, store);
+    return;
+  }
+
   const storeMatch = url.pathname.match(/^\/api\/admin\/stores\/([^/]+)$/);
   if (req.method === "PATCH" && storeMatch) {
     const store = updateStore(decodeURIComponent(storeMatch[1]), await readJson(req));
@@ -152,6 +164,17 @@ export async function handleApi(req, res, url) {
     const { status } = await readJson(req);
     const order = updateOrderStatus(decodeURIComponent(statusMatch[1]), status);
     sendJson(res, order ? 200 : 404, order ?? { error: "订单不存在" });
+    return;
+  }
+
+  const cancelMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/cancel$/);
+  if (req.method === "POST" && cancelMatch) {
+    try {
+      const order = cancelOrder(decodeURIComponent(cancelMatch[1]));
+      sendJson(res, 200, order);
+    } catch (e) {
+      sendJson(res, 400, { error: e.message });
+    }
     return;
   }
 
@@ -186,6 +209,48 @@ export async function handleApi(req, res, url) {
     const { status } = await readJson(req);
     const sheet = updateProductionSheetStatus(decodeURIComponent(sheetStatusMatch[1]), status);
     sendJson(res, sheet ? 200 : 404, sheet ?? { error: "生产单不存在" });
+    return;
+  }
+
+  const sheetItemMatch = url.pathname.match(/^\/api\/admin\/production-sheets\/([^/]+)\/items\/([^/]+)$/);
+  if (req.method === "PATCH" && sheetItemMatch) {
+    const { totalQty } = await readJson(req);
+    const sheet = updateProductionSheetItem(decodeURIComponent(sheetItemMatch[1]), decodeURIComponent(sheetItemMatch[2]), totalQty);
+    sendJson(res, sheet ? 200 : 404, sheet ?? { error: "生产单项不存在" });
+    return;
+  }
+
+  const sheetItemsMatch = url.pathname.match(/^\/api\/admin\/production-sheets\/([^/]+)\/items$/);
+  if (req.method === "PATCH" && sheetItemsMatch) {
+    const { items } = await readJson(req);
+    const sheet = updateProductionSheetItems(decodeURIComponent(sheetItemsMatch[1]), items);
+    sendJson(res, sheet ? 200 : 404, sheet ?? { error: "生产单不存在" });
+    return;
+  }
+
+  // ── Backups ──
+  if (req.method === "GET" && url.pathname === "/api/admin/backups") {
+    sendJson(res, 200, listBackups());
+    return;
+  }
+  if (req.method === "POST" && url.pathname === "/api/admin/backup") {
+    try {
+      const result = backupDatabase(true);
+      sendJson(res, 200, result);
+    } catch (e) {
+      sendJson(res, 500, { error: e.message });
+    }
+    return;
+  }
+
+  // ── Changelog ──
+  if (req.method === "GET" && url.pathname === "/api/admin/changelog") {
+    sendJson(res, 200, getChangelog());
+    return;
+  }
+  if (req.method === "POST" && url.pathname === "/api/admin/changelog") {
+    const entry = await readJson(req);
+    sendJson(res, 200, createChangelogEntry(entry));
     return;
   }
 

@@ -34,8 +34,10 @@ export function CustomerPage() {
       <CustomerHeader onOpenMyOrders={() => setMyOrdersOpen(true)} />
       <main className="pb-24 lg:pb-0">
         <HeroSection batchSale={batchSale} featuredProducts={featuredProducts} inventory={inventory} />
-        <FeatureEntrances />
-        <OrderLookup stores={stores} />
+        <div className="hidden sm:block">
+          <FeatureEntrances />
+          <OrderLookup stores={stores} />
+        </div>
 
         <section id="menu" className="bg-white py-16">
           <div className="mx-auto max-w-7xl px-5 sm:px-8">

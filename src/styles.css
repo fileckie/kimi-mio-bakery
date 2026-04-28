@@ -57,7 +57,10 @@ button {
   border-radius: 8px;
   border: 1.5px solid #E2D5C5;
   background: #FFFFFF;
-  padding: 0.875rem 1rem;
+  padding-top: 0.875rem;
+  padding-right: 1rem;
+  padding-bottom: 0.875rem;
+  padding-left: 1rem;
   color: #1E1712;
   outline: none;
   transition: border-color 200ms ease, box-shadow 200ms ease;
@@ -69,6 +72,21 @@ button {
 }
 .input-field::placeholder {
   color: #A89E94;
+}
+
+/* Button bump feedback */
+@keyframes btn-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.85); }
+  100% { transform: scale(1); }
+}
+@keyframes count-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.animate-count-pop {
+  animation: count-pop 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Counter button */
@@ -515,6 +533,47 @@ button {
     radial-gradient(ellipse at 80% 70%, rgba(232,74,46,0.03) 0%, transparent 50%);
 }
 
+/* ===== Scrollbar hide (mobile tabs etc.) ===== */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== Mobile table scroll hint ===== */
+.table-scroll-hint {
+  position: relative;
+}
+.table-scroll-hint::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  background: linear-gradient(to right, transparent, rgba(30,23,18,0.04));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.table-scroll-hint:hover::after {
+  opacity: 1;
+}
+
+/* ===== Mobile-safe touch action ===== */
+@media (max-width: 640px) {
+  .admin-panel {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  .input-field {
+    padding: 0.75rem 0.875rem;
+    font-size: 1rem; /* Prevent iOS zoom on focus */
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -523,4 +582,103 @@ button {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ===== 动效体系 Phase 1 ===== */
+
+/* Toast 弹性动画 */
+@keyframes toast-bounce-in {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.92); }
+  60%  { opacity: 1; transform: translateY(-4px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toast-bounce-out {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-12px) scale(0.95); }
+}
+.animate-toast-in {
+  animation: toast-bounce-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.animate-toast-out {
+  animation: toast-bounce-out 0.3s ease-in forwards;
+}
+
+/* 按钮按压反馈 */
+.press-feedback {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.press-feedback:active {
+  transform: scale(0.97);
+}
+
+/* 新订单滑入 */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* 脉冲光环（库存预警） */
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(232, 74, 46, 0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(232, 74, 46, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(232, 74, 46, 0); }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+/* 数字滚动容器 */
+.count-up {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 全局按钮按压反馈（排除已有复杂动画的元素） */
+button:not(.no-press):active,
+[role="button"]:not(.no-press):active,
+.press-feedback:active {
+  transform: scale(0.97);
+  transition: transform 0.12s ease;
+}
+
+/* 禁止按压反馈的元素 */
+.no-press:active {
+  transform: none !important;
+}
+
+/* ===== 暗色模式全局覆盖 ===== */
+.dark {
+  color-scheme: dark;
+}
+.dark body {
+  background: #1E1712;
+  color: #FAF6F0;
+}
+.dark .admin-panel {
+  background: #2A2018;
+  border-color: #3D3028;
+  color: #FAF6F0;
+}
+.dark .input-field {
+  background: #2A2018;
+  border-color: #3D3028;
+  color: #FAF6F0;
+}
+.dark .input-field::placeholder {
+  color: #7A6E62;
+}
+.dark .input-field:focus {
+  border-color: #E84A2E;
+  box-shadow: 0 0 0 3px rgba(232, 74, 46, 0.15);
+}
+.dark select {
+  background: #2A2018;
+  color: #FAF6F0;
+}
+.dark select option {
+  background: #2A2018;
+  color: #FAF6F0;
 }

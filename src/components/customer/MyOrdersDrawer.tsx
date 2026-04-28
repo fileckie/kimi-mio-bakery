@@ -11,6 +11,7 @@ const statusStyles: Record<Order["status"], string> = {
   "待发货": "bg-purple-50 text-purple-800",
   "已发货": "bg-sky-50 text-sky-800",
   "已完成": "bg-green-50 text-green-800",
+  "已取消": "bg-stone-100 text-stone-500",
 };
 
 const statusLabels: Record<Order["status"], string> = {
@@ -20,6 +21,7 @@ const statusLabels: Record<Order["status"], string> = {
   "待发货": "已出炉，待配送",
   "已发货": "配送中",
   "已完成": "已完成",
+  "已取消": "已取消",
 };
 
 interface Props {
@@ -31,6 +33,7 @@ export function MyOrdersDrawer({ open, onClose }: Props) {
   const { customer } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !customer) return;
@@ -41,10 +44,22 @@ export function MyOrdersDrawer({ open, onClose }: Props) {
       .finally(() => setLoading(false));
   }, [open, customer]);
 
+  const handleCancel = async (id: string) => {
+    if (!confirm("确定取消此订单？取消后不可恢复。")) return;
+    setCancellingId(id);
+    try {
+      const updated = await api.cancelOrder(id);
+      setOrders((prev) => prev.map((o) => (o.id === id ? updated : o)));
+    } catch (err: any) {
+      alert(err.message || "取消失败");
+    }
+    setCancellingId(null);
+  };
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] lg:hidden animate-fade-in">
+    <div className="fixed inset-0 z-[60] animate-fade-in">
       <div className="absolute inset-0 bg-kiln/30 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-elevated animate-slide-from-bottom overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-border px-5 py-4 flex items-center justify-between">
@@ -91,9 +106,20 @@ export function MyOrdersDrawer({ open, onClose }: Props) {
                   </div>
                   <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
                     <span className="text-xs text-muted">{order.createdAt}</span>
-                    <span className="font-bold text-ember">¥{order.total}</span>
+                    <div className="flex items-center gap-2">
+                      {order.status === "待确认" && (
+                        <button
+                          onClick={() => handleCancel(order.id)}
+                          disabled={cancellingId === order.id}
+                          className="text-xs text-stone-400 hover:text-ember underline transition disabled:opacity-50"
+                        >
+                          {cancellingId === order.id ? "取消中..." : "取消"}
+                        </button>
+                      )}
+                      <span className="font-bold text-ember">¥{order.total}</span>
+                    </div>
                   </div>
-                  {order.pickupCode && (
+                  {order.pickupCode && order.status !== "已取消" && (
                     <p className="mt-2 text-xs">
                       取货暗号 <span className="font-mono font-bold text-kiln">{order.pickupCode}</span>
                     </p>

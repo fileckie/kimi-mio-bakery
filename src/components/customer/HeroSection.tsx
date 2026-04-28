@@ -1,4 +1,4 @@
-import { ArrowRight, Clock, Flame } from "lucide-react";
+import { ArrowRight, Flame } from "lucide-react";
 import { Countdown } from "../ui/Countdown";
 import type { BatchSale, Product, InventoryMap } from "../../types";
 
@@ -16,23 +16,42 @@ export function HeroSection({ batchSale, featuredProducts, inventory }: HeroSect
   };
 
   return (
-    <section id="today" className="relative overflow-hidden bg-ash pt-24">
-      {/* 暖色渐变背景块 */}
-      <div className="absolute -right-32 -top-32 h-[500px] w-[500px] rounded-full bg-ember/5 blur-3xl" />
-      <div className="absolute -left-20 top-1/3 h-[400px] w-[400px] rounded-full bg-wheat/10 blur-3xl" />
+    <section id="today" className="relative overflow-hidden bg-ash pt-20 sm:pt-24">
+      {/* Warm gradient background — simplified on mobile, full on desktop */}
+      <div className="hidden sm:block absolute -right-32 -top-32 h-[500px] w-[500px] rounded-full bg-ember/5 blur-3xl" />
+      <div className="hidden sm:block absolute -left-20 top-1/3 h-[400px] w-[400px] rounded-full bg-wheat/10 blur-3xl" />
+      <div className="sm:hidden absolute -right-10 -top-10 h-[200px] w-[200px] rounded-full bg-ember/5 blur-2xl" />
 
-      <div className="relative mx-auto flex min-h-[calc(100svh-6rem)] max-w-7xl flex-col justify-center px-5 py-16 sm:px-8">
-        <div className="animate-rise">
+      <div className="relative mx-auto flex min-h-0 sm:min-h-[calc(100svh-6rem)] max-w-7xl flex-col justify-center px-5 py-10 sm:py-16 sm:px-8">
+        {/* Mobile: compact single-column layout */}
+        <div className="sm:hidden text-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-ember/20 bg-white px-3 py-1.5 text-[11px] font-semibold text-ember shadow-soft mb-4">
+            <Flame className="h-3 w-3" />
+            {batchSale.isOpen ? "本轮接受预订中" : "下一炉准备中"}
+          </div>
+          <h1 className="font-display text-6xl font-bold tracking-tighter text-kiln">Mio</h1>
+          <p className="mt-1 font-brush text-2xl text-ember">慢火窑烤面包</p>
+          <p className="mt-1 font-hand text-sm text-smoke">不多做，只为你烤</p>
+
+          {batchSale.isOpen && batchSale.deadline.includes(":") && (
+            <div className="mt-4">
+              <Countdown targetTime={batchSale.deadline.split(" ").pop() || "21:30"} />
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: full layout */}
+        <div className="hidden sm:block animate-rise">
           <div className="inline-flex items-center gap-2 rounded-full border border-ember/20 bg-white px-4 py-2 text-xs font-semibold text-ember shadow-soft mb-8">
             <Flame className="h-3.5 w-3.5 animate-flicker" />
             {batchSale.isOpen ? "本轮窑火已点燃，接受预订中" : "窑火渐熄，下一炉准备中"}
           </div>
 
           <p className="font-serif text-lg italic text-smoke mb-3">SLOWFIRE BAKERY</p>
-          <h1 className="font-display text-7xl font-bold tracking-tighter text-kiln sm:text-9xl">
+          <h1 className="font-display text-9xl font-bold tracking-tighter text-kiln break-words overflow-hidden">
             Mio
           </h1>
-          <p className="mt-3 font-brush text-4xl text-ember sm:text-5xl">
+          <p className="mt-3 font-brush text-5xl text-ember">
             慢火窑烤面包
           </p>
           <p className="mt-2 font-hand text-xl text-smoke">
@@ -58,8 +77,8 @@ export function HeroSection({ batchSale, featuredProducts, inventory }: HeroSect
           </div>
         </div>
 
-        {/* Featured bake cards */}
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Featured bake cards — desktop only */}
+        <div className="hidden sm:grid mt-16 gap-4 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
           {featuredProducts.slice(0, 3).map((product, i) => (
             <a
               key={product.id}

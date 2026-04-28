@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -35,6 +36,13 @@ export default {
           "'Long Cang'",
           "'Zhi Mang Xing'",
           "cursive",
+        ],
+        wenkai: [
+          "'LXGW WenKai'",
+          "'LXGWWenKai-Regular'",
+          "'PingFang SC'",
+          "'Microsoft YaHei'",
+          "sans-serif",
         ],
         script: [
           "'Caveat'",
@@ -131,6 +139,7 @@ export default {
         "typewriter": "typewriter 1.2s steps(12) forwards",
         "ink-spread": "inkSpread 0.8s cubic-bezier(0.22,1,0.36,1) both",
         "scale-in": "scaleIn 0.3s cubic-bezier(0.22,1,0.36,1) both",
+        "slide-in-right": "slideInRight 0.3s cubic-bezier(0.22,1,0.36,1) both",
       },
       keyframes: {
         fadeIn: {
@@ -194,6 +203,10 @@ export default {
         scaleIn: {
           from: { opacity: "0", transform: "scale(0.92)" },
           to: { opacity: "1", transform: "scale(1)" },
+        },
+        slideInRight: {
+          from: { opacity: "0", transform: "translateX(100%)" },
+          to: { opacity: "1", transform: "translateX(0)" },
         },
       },
     },

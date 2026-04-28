@@ -15,7 +15,8 @@ const navItems = [
 export function CustomerHeader({ onOpenMyOrders }: { onOpenMyOrders?: () => void }) {
   const { mobileMenuOpen, setMobileMenuOpen, scrolled, setScrolled } = useUIStore();
   const navigate = useAppStore((s) => s.setRoute);
-  const cartCount = Object.values(useCartStore((s) => s.items)).reduce((a, b) => a + b, 0);
+  const cartItems = useCartStore((s) => s.items);
+  const cartCount = Object.values(cartItems).reduce((a, b) => a + b, 0);
   const customer = useAuthStore((s) => s.customer);
 
   useEffect(() => {

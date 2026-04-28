@@ -1,14 +1,44 @@
 import { createReadStream, existsSync } from "node:fs";
 import { extname, join } from "node:path";
 import { createServer } from "node:http";
-import { initDb } from "./db.mjs";
+import { initDb, getBatchSale, closeBatchAndCreateSheet } from "./db.mjs";
 import { handleApi } from "./api-handler.mjs";
+import { backupDatabase } from "./backup.mjs";
 
 const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0";
 const distDir = join(process.cwd(), "dist");
 
 initDb();
+
+// Daily auto-backup at 03:00
+setInterval(() => {
+  const now = new Date();
+  if (now.getHours() === 3 && now.getMinutes() === 0) {
+    try {
+      backupDatabase(false);
+    } catch (e) {
+      console.error("[auto-backup] failed:", e.message);
+    }
+  }
+}, 60_000);
+
+// Auto close batch at deadline
+setInterval(() => {
+  const batch = getBatchSale();
+  if (!batch.isOpen || !batch.deadline) return;
+  const now = new Date();
+  const [h, m] = batch.deadline.split(":").map(Number);
+  if (isNaN(h) || isNaN(m)) return;
+  if (now.getHours() === h && now.getMinutes() === m) {
+    try {
+      const sheet = closeBatchAndCreateSheet();
+      console.log("[auto-close-batch] closed at", batch.deadline, "sheet:", sheet.id);
+    } catch (e) {
+      console.error("[auto-close-batch] failed:", e.message);
+    }
+  }
+}, 60_000);
 
 const server = createServer(async (req, res) => {
   try {

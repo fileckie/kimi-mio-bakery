@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
-import { seedBatchSale, seedOrders, seedProducts, seedStores } from "./seed.mjs";
+import { seedBatchSale, seedChangelog, seedOrders, seedProducts, seedStores } from "./seed.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = process.env.DATA_DIR || (process.env.VERCEL ? "/tmp/mio-bakery-data" : join(__dirname, "..", "data"));
@@ -127,6 +127,13 @@ export function initDb() {
       storeBreakdown TEXT NOT NULL DEFAULT '{}',
       FOREIGN KEY (sheetId) REFERENCES production_sheets(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS changelog (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL,
+      version TEXT NOT NULL,
+      title TEXT NOT NULL,
+      items TEXT NOT NULL DEFAULT '[]'
+    );
   `);
 
   ensureColumn("products", "imageUrl", "TEXT NOT NULL DEFAULT ''");
@@ -144,6 +151,8 @@ export function initDb() {
   ensureColumn("batch_sales", "successTitle", "TEXT NOT NULL DEFAULT 'ORDER CONFIRMED'");
   ensureColumn("batch_sales", "successMessage", "TEXT NOT NULL DEFAULT '面团已入单，窑火为你而燃'");
   ensureColumn("batch_sales", "footerTagline", "TEXT NOT NULL DEFAULT '不多做，只为你烤'");
+  ensureColumn("changelog", "version", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn("changelog", "items", "TEXT NOT NULL DEFAULT '[]'");
   ensureColumn("orders", "customerId", "TEXT");
   ensureColumn("orders", "customerName", "TEXT");
   ensureColumn("orders", "customerPhone", "TEXT");
@@ -152,9 +161,27 @@ export function initDb() {
   ensureColumn("orders", "trackingNumber", "TEXT");
   ensureColumn("orders", "logisticsStatus", "TEXT");
   ensureColumn("orders", "deliveryNote", "TEXT");
+  ensureColumn("products", "crossSectionImage", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn("products", "texture", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn("products", "crust", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn("products", "aroma", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn("products", "origin", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn("batch_sales", "batchSequence", "INTEGER NOT NULL DEFAULT 1");
+  ensureColumn("orders", "batchSequence", "INTEGER NOT NULL DEFAULT 1");
+  ensureColumn("batch_sales", "printLogoUrl", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn("batch_sales", "printPrimaryColor", "TEXT NOT NULL DEFAULT '#E84A2E'");
 
   const productCount = db.prepare("SELECT COUNT(*) AS count FROM products").get().count;
   if (productCount === 0) seedDb();
+
+  // Ensure changelog has default entries (incremental)
+  const existingIds = new Set(db.prepare("SELECT id FROM changelog").all().map((r) => r.id));
+  const insertChangelog = db.prepare("INSERT INTO changelog (id, date, version, title, items) VALUES (?, ?, ?, ?, ?)");
+  for (const entry of seedChangelog) {
+    if (!existingIds.has(entry.id)) {
+      insertChangelog.run(entry.id, entry.date, entry.version, entry.title, JSON.stringify(entry.items));
+    }
+  }
 }
 
 function seedDb() {
@@ -231,6 +258,12 @@ function seedDb() {
     });
 
     for (const order of seedOrders) insertOrder(order);
+
+    const insertChangelog = db.prepare("INSERT INTO changelog (id, date, version, title, items) VALUES (?, ?, ?, ?, ?)");
+    for (const entry of seedChangelog) {
+      insertChangelog.run(entry.id, entry.date, entry.version, entry.title, JSON.stringify(entry.items));
+    }
+
     db.exec("COMMIT");
   } catch (error) {
     db.exec("ROLLBACK");
@@ -247,7 +280,8 @@ export function getBootstrap() {
   const batchSale = mapBatchSale(db.prepare("SELECT * FROM batch_sales WHERE id = 'current'").get());
   const inventory = buildInventory();
   const orders = getOrders();
-  return { products, stores, batchSale, inventory, orders };
+  const changelog = getChangelog();
+  return { products, stores, batchSale, inventory, orders, changelog };
 }
 
 export function getOrders() {
@@ -269,13 +303,14 @@ export function findOrderByCode(code) {
 }
 
 export function insertOrder(order) {
+  const batchSale = getBatchSale();
   const insert = db.prepare(`
     INSERT INTO orders (
       id, type, subtotal, shippingFee, total, deliveryMethod, paymentMethod, status,
       customerId, customerName, customerPhone, paymentStatus, sourceStoreId, pickupStoreId,
       receiver, phone, address, shippingCompany, trackingNumber, logisticsStatus, deliveryNote,
-      pickupCode, createdAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      pickupCode, createdAt, batchSequence
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const insertItem = db.prepare(`
     INSERT INTO order_items (orderId, productId, name, qty, price) VALUES (?, ?, ?, ?, ?)
@@ -304,6 +339,7 @@ export function insertOrder(order) {
     order.deliveryNote ?? null,
     order.pickupCode,
     order.createdAt,
+    batchSale.batchSequence || 1,
   );
   for (const item of order.items) {
     insertItem.run(order.id, item.productId, item.name, item.qty, item.price);
@@ -369,8 +405,8 @@ export function createProduct(product) {
   if (exists) throw new Error("商品 ID 已存在，请换一个名称");
   db.prepare(`
     INSERT INTO products (
-      id, name, category, weight, price, description, ingredients, imageTone, imageUrl, isPublished, featured
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      id, name, category, weight, price, description, ingredients, imageTone, imageUrl, crossSectionImage, texture, crust, aroma, origin, isPublished, featured
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     product.name,
@@ -381,6 +417,11 @@ export function createProduct(product) {
     JSON.stringify(product.ingredients || []),
     product.imageTone || "from-amber-100 via-stone-100 to-yellow-50",
     product.imageUrl || "",
+    product.crossSectionImage || "",
+    product.texture || "",
+    product.crust || "",
+    product.aroma || "",
+    product.origin || "",
     Number(Boolean(product.isPublished)),
     Number(Boolean(product.featured)),
   );
@@ -389,7 +430,7 @@ export function createProduct(product) {
   const insertInventory = db.prepare(`
     INSERT INTO inventory_allocations (productId, storeId, allocated, sold) VALUES (?, ?, ?, 0)
   `);
-  for (const store of stores) insertInventory.run(id, store.id, 0);
+  for (const store of stores) insertInventory.run(id, store.id, 20);
   return { product: mapProduct(db.prepare("SELECT * FROM products WHERE id = ?").get(id)), inventory: buildInventory() };
 }
 
@@ -402,10 +443,15 @@ export function updateProduct(id, patch) {
     isPublished: patch.isPublished === undefined ? current.isPublished : Number(Boolean(patch.isPublished)),
     featured: patch.featured === undefined ? current.featured : Number(Boolean(patch.featured)),
     ingredients: patch.ingredients ? JSON.stringify(patch.ingredients) : current.ingredients,
+    crossSectionImage: patch.crossSectionImage !== undefined ? patch.crossSectionImage : current.crossSectionImage,
+    texture: patch.texture !== undefined ? patch.texture : current.texture,
+    crust: patch.crust !== undefined ? patch.crust : current.crust,
+    aroma: patch.aroma !== undefined ? patch.aroma : current.aroma,
+    origin: patch.origin !== undefined ? patch.origin : current.origin,
   };
   db.prepare(`
     UPDATE products SET name = ?, category = ?, weight = ?, price = ?, description = ?,
-    ingredients = ?, imageTone = ?, imageUrl = ?, isPublished = ?, featured = ? WHERE id = ?
+    ingredients = ?, imageTone = ?, imageUrl = ?, crossSectionImage = ?, texture = ?, crust = ?, aroma = ?, origin = ?, isPublished = ?, featured = ? WHERE id = ?
   `).run(
     next.name,
     next.category,
@@ -415,6 +461,11 @@ export function updateProduct(id, patch) {
     next.ingredients,
     next.imageTone,
     next.imageUrl ?? "",
+    next.crossSectionImage ?? "",
+    next.texture ?? "",
+    next.crust ?? "",
+    next.aroma ?? "",
+    next.origin ?? "",
     next.isPublished,
     next.featured,
     id,
@@ -436,12 +487,21 @@ export function updateStore(id, patch) {
   return mapStore(db.prepare("SELECT * FROM stores WHERE id = ?").get(id));
 }
 
+export function createStore(store) {
+  const id = store.id || `store-${Date.now()}`;
+  db.prepare("INSERT INTO stores (id, name, role, address, pickupOpen, sourceCode) VALUES (?, ?, ?, ?, ?, ?)")
+    .run(id, store.name, store.role || "pickup", store.address || "", store.pickupOpen ? 1 : 0, store.sourceCode || "");
+  return mapStore(db.prepare("SELECT * FROM stores WHERE id = ?").get(id));
+}
+
 export function updateBatchSale(patch) {
   const current = db.prepare("SELECT * FROM batch_sales WHERE id = 'current'").get();
+  const isOpening = patch.isOpen === true && !current.isOpen;
   const next = {
     ...current,
     ...patch,
     isOpen: patch.isOpen === undefined ? current.isOpen : Number(Boolean(patch.isOpen)),
+    batchSequence: isOpening ? (current.batchSequence || 1) + 1 : (current.batchSequence || 1),
     ovenBatches: patch.ovenBatches ? JSON.stringify(patch.ovenBatches) : current.ovenBatches,
     featuredProductIds: patch.featuredProductIds
       ? JSON.stringify(patch.featuredProductIds)
@@ -449,14 +509,16 @@ export function updateBatchSale(patch) {
     pickupStoreIds: patch.pickupStoreIds ? JSON.stringify(patch.pickupStoreIds) : current.pickupStoreIds,
   };
   db.prepare(`
-    UPDATE batch_sales SET isOpen = ?, deadline = ?, defaultDeadline = ?, ovenBatch = ?, ovenBatches = ?, featuredProductIds = ?,
+    UPDATE batch_sales SET isOpen = ?, batchSequence = ?, deadline = ?, defaultDeadline = ?, ovenBatch = ?, ovenBatches = ?, featuredProductIds = ?,
     pickupStoreIds = ?, freeShippingThreshold = ?, baseShippingFee = ?, note = ?,
     paymentWechatId = ?, paymentQrUrl = ?, paymentInstruction = ?,
     checkoutTitle = ?, checkoutSubtitle = ?, checkoutEmptyHint = ?, closedMessage = ?,
-    memberLabel = ?, memberHint = ?, successTitle = ?, successMessage = ?, footerTagline = ?
+    memberLabel = ?, memberHint = ?, successTitle = ?, successMessage = ?, footerTagline = ?,
+    printLogoUrl = ?, printPrimaryColor = ?
     WHERE id = 'current'
   `).run(
     next.isOpen,
+    next.batchSequence,
     next.deadline,
     next.defaultDeadline ?? current.defaultDeadline ?? "21:30",
     next.ovenBatch,
@@ -478,6 +540,8 @@ export function updateBatchSale(patch) {
     next.successTitle ?? current.successTitle ?? "ORDER CONFIRMED",
     next.successMessage ?? current.successMessage ?? "面团已入单，窑火为你而燃",
     next.footerTagline ?? current.footerTagline ?? "不多做，只为你烤",
+    next.printLogoUrl ?? current.printLogoUrl ?? "",
+    next.printPrimaryColor ?? current.printPrimaryColor ?? "#E84A2E",
   );
   return mapBatchSale(db.prepare("SELECT * FROM batch_sales WHERE id = 'current'").get());
 }
@@ -507,6 +571,20 @@ export function getCustomerOrders(customerId) {
 
 export function updateOrderStatus(id, status) {
   db.prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, id);
+  return getOrder(id);
+}
+
+export function cancelOrder(id) {
+  const order = getOrder(id);
+  if (!order) throw new Error("订单不存在");
+  if (order.status !== "待确认") throw new Error("只能取消待确认订单");
+  db.prepare("UPDATE orders SET status = ? WHERE id = ?").run("已取消", id);
+  // Restore inventory
+  for (const item of order.items) {
+    db.prepare(`
+      UPDATE inventory_allocations SET sold = MAX(0, sold - ?) WHERE productId = ? AND storeId = ?
+    `).run(item.qty, item.productId, order.pickupStoreId);
+  }
   return getOrder(id);
 }
 
@@ -639,6 +717,11 @@ function mapProduct(row) {
     imageUrl: row.imageUrl || "",
     isPublished: Boolean(row.isPublished),
     featured: Boolean(row.featured),
+    crossSectionImage: row.crossSectionImage || "",
+    texture: row.texture || "",
+    crust: row.crust || "",
+    aroma: row.aroma || "",
+    origin: row.origin || "",
   };
 }
 
@@ -657,6 +740,7 @@ function mapBatchSale(row) {
   return {
     id: row.id,
     isOpen: Boolean(row.isOpen),
+    batchSequence: row.batchSequence || 1,
     deadline: row.deadline,
     defaultDeadline: row.defaultDeadline || "21:30",
     ovenBatch: row.ovenBatch,
@@ -678,6 +762,8 @@ function mapBatchSale(row) {
     successTitle: row.successTitle || "ORDER CONFIRMED",
     successMessage: row.successMessage || "面团已入单，窑火为你而燃",
     footerTagline: row.footerTagline || "不多做，只为你烤",
+    printLogoUrl: row.printLogoUrl || "",
+    printPrimaryColor: row.printPrimaryColor || "#E84A2E",
   };
 }
 
@@ -709,6 +795,7 @@ function mapOrderWithItems(row) {
     deliveryNote: row.deliveryNote ?? undefined,
     pickupCode: row.pickupCode,
     createdAt: row.createdAt,
+    batchSequence: row.batchSequence || 1,
   };
 }
 
@@ -746,7 +833,7 @@ export function closeBatchAndCreateSheet() {
   const totalItems = Array.from(productMap.values()).reduce((sum, p) => sum + p.totalQty, 0);
 
   db.prepare("INSERT INTO production_sheets (id, batchId, createdAt, totalItems, status) VALUES (?, ?, ?, ?, ?)")
-    .run(sheetId, "current", new Date().toISOString(), totalItems, "生产中");
+    .run(sheetId, String(batchSale.batchSequence || 1), new Date().toISOString(), totalItems, "生产中");
 
   const insertItem = db.prepare(`
     INSERT INTO production_sheet_items (sheetId, productId, name, category, totalQty, storeBreakdown)
@@ -797,4 +884,48 @@ export function getProductionSheets() {
 export function updateProductionSheetStatus(id, status) {
   db.prepare("UPDATE production_sheets SET status = ? WHERE id = ?").run(status, id);
   return getProductionSheet(id);
+}
+
+export function updateProductionSheetItem(sheetId, productId, totalQty) {
+  const item = db.prepare("SELECT * FROM production_sheet_items WHERE sheetId = ? AND productId = ?").get(sheetId, productId);
+  if (!item) return null;
+  const oldQty = item.totalQty;
+  const diff = totalQty - oldQty;
+  db.prepare("UPDATE production_sheet_items SET totalQty = ? WHERE sheetId = ? AND productId = ?").run(totalQty, sheetId, productId);
+  db.prepare("UPDATE production_sheets SET totalItems = totalItems + ? WHERE id = ?").run(diff, sheetId);
+  return getProductionSheet(sheetId);
+}
+
+export function updateProductionSheetItems(id, items) {
+  db.prepare("DELETE FROM production_sheet_items WHERE sheetId = ?").run(id);
+  const insert = db.prepare(`
+    INSERT INTO production_sheet_items (sheetId, productId, name, category, totalQty, storeBreakdown)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  let totalItems = 0;
+  for (const item of items) {
+    insert.run(id, item.productId, item.name, item.category, item.totalQty, JSON.stringify(item.storeBreakdown || {}));
+    totalItems += item.totalQty;
+  }
+  db.prepare("UPDATE production_sheets SET totalItems = ? WHERE id = ?").run(totalItems, id);
+  return getProductionSheet(id);
+}
+
+// ── Changelog ──
+export function getChangelog() {
+  const rows = db.prepare("SELECT * FROM changelog ORDER BY date DESC").all();
+  return rows.map((r) => ({
+    id: r.id,
+    date: r.date,
+    version: r.version,
+    title: r.title,
+    items: JSON.parse(r.items || "[]"),
+    type: r.type || "feature",
+  }));
+}
+
+export function createChangelogEntry({ id, date, version, title, items }) {
+  db.prepare("INSERT INTO changelog (id, date, version, title, items) VALUES (?, ?, ?, ?, ?)")
+    .run(id, date, version, title, JSON.stringify(items));
+  return { id, date, version, title, items };
 }
